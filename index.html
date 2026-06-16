@@ -149,6 +149,18 @@
   .spellfeedback{font-size:clamp(20px,3.2vw,30px); font-weight:900; min-height:1.4em; margin:10px 0 4px;}
   .spellfeedback .reveal b{letter-spacing:1px;}
 
+  /* ---------- Writing journal ---------- */
+  .journal{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-top:14px;}
+  .jcard{background:#fff; border-radius:18px; padding:8px; box-shadow:0 6px 0 rgba(0,0,0,.06); border:5px solid #ece8f7;}
+  .jcard.ok{border-color:var(--th);} .jcard.redo{border-color:var(--ch);}
+  .jcard img{width:100%; height:84px; object-fit:contain; background:#fbfaff; border-radius:10px; display:block;}
+  .jcard .jword{font-weight:900; font-size:22px; text-align:center; margin:6px 0 5px; letter-spacing:.5px;}
+  .jcard .jbtns{display:flex; gap:6px; justify-content:center;}
+  .jcard .jbtns button{border:none; border-radius:12px; padding:7px 12px; font-size:18px; cursor:pointer; background:#f0edf9; box-shadow:0 4px 0 rgba(0,0,0,.06);}
+  .jcard .jbtns button:active{transform:translateY(3px);}
+  .jcard.ok .jstat{color:var(--th);} .jcard.redo .jstat{color:var(--ch);}
+  .jstat{font-size:13px; font-weight:bold; text-align:center; min-height:1.1em; opacity:.8;}
+
   footer{text-align:center; margin-top:40px; opacity:.5; font-size:14px; font-weight:bold;}
 
   /* confetti */
@@ -239,11 +251,21 @@
     <div class="tracebox" id="spbox" style="display:none"><canvas id="spcanvas"></canvas></div>
     <div class="spellfeedback" id="spfeedback"></div>
     <div class="choices" id="spbuttons" style="display:none">
-      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="clearSpell()"><span class="ic">🧽</span> Clear</button>
-      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="showSpell()"><span class="ic">👀</span> Show word</button>
-      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="nextSpell()"><span class="ic">➡️</span> Next word</button>
+      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="autoCheck()"><span class="ic">🔎</span> Check</button>
+      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="addToJournal()"><span class="ic">💾</span> Save</button>
+      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="showSpell()"><span class="ic">👀</span> Show word</button>
+      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="clearSpell()"><span class="ic">🧽</span> Clear</button>
+      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="nextSpell()"><span class="ic">➡️</span> Next</button>
     </div>
     <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
+
+    <div id="journalwrap" style="display:none;margin-top:18px">
+      <div class="sectionhead">
+        <h3 style="margin:0;font-size:clamp(20px,3vw,28px)">📒 My Writing</h3>
+        <button class="speak" style="padding:8px 14px;font-size:15px" onclick="clearJournal()"><span class="ic">🗑️</span> Clear all</button>
+      </div>
+      <div class="journal" id="journal"></div>
+    </div>
   </section>
 
   <footer>Made with ❤️ for a smart reader · sh · ch · th · wh · ph</footer>
@@ -592,18 +614,26 @@ function drawSpGuide(){
   spctx.beginPath(); spctx.moveTo(0,h*0.55); spctx.lineTo(w,h*0.55); spctx.stroke();
   spctx.restore();
 }
-function clearSpell(){ drawSpGuide(); }
+function clearSpell(){ drawSpGuide(); resetInk(); }
+let spStrokes=[], spCur=null, spT0=0;     // recorded ink for handwriting recognition
 function spPos(e){ const r=spcanvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
-function spStart(e){ spDrawing=true; const p=spPos(e); spctx.beginPath(); spctx.moveTo(p.x,p.y); e.preventDefault(); }
+function spStart(e){
+  spDrawing=true; const p=spPos(e);
+  if(!spStrokes.length) spT0=performance.now();
+  spCur=[{x:p.x,y:p.y,t:performance.now()-spT0}]; spStrokes.push(spCur);
+  spctx.beginPath(); spctx.moveTo(p.x,p.y); e.preventDefault();
+}
 function spMove(e){
   if(!spDrawing) return;
   const p=spPos(e);
+  if(spCur) spCur.push({x:p.x,y:p.y,t:performance.now()-spT0});
   spctx.strokeStyle=(spItem&&COLORHEX[spItem.d])||'#5b8def';
   spctx.lineWidth=12; spctx.lineCap='round'; spctx.lineJoin='round';
   spctx.lineTo(p.x,p.y); spctx.stroke(); spctx.beginPath(); spctx.moveTo(p.x,p.y);
   e.preventDefault();
 }
-function spEnd(){ spDrawing=false; }
+function spEnd(){ spDrawing=false; spCur=null; }
+function resetInk(){ spStrokes=[]; spCur=null; spT0=0; }
 spcanvas.addEventListener('pointerdown',spStart);
 spcanvas.addEventListener('pointermove',spMove);
 spcanvas.addEventListener('pointerup',spEnd);
@@ -623,7 +653,7 @@ function nextSpell(){
   spItem=qPool[Math.floor(Math.random()*qPool.length)];
   document.getElementById('spemoji').textContent=spItem.e;
   document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
-  drawSpGuide();
+  drawSpGuide(); resetInk();
   speakRepeat(spItem.w, 2, 950);
 }
 function showSpell(){
@@ -637,6 +667,104 @@ function showSpell(){
            {kind:'ui',name:'checkwriting',text:'Now check your writing!',rate:UI_RATE}]);
 }
 document.getElementById('sphear').onclick=()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); };
+
+function wordHTML(item){
+  const re=new RegExp('('+item.d+')','i');
+  return item.w.replace(re,'<b style="color:var(--'+item.d+')">$1</b>');
+}
+function spFeedback(html){ document.getElementById('spfeedback').innerHTML = html; }
+
+/* ---- B) Automatic handwriting recognition (Google Input Tools) ---- */
+async function recognizeHandwriting(strokes, w, h){
+  const ink = strokes.filter(s=>s.length).map(s=>{
+    const xs=[],ys=[],ts=[];
+    s.forEach(p=>{ xs.push(Math.round(p.x)); ys.push(Math.round(p.y)); ts.push(Math.round(p.t)); });
+    return [xs,ys,ts];
+  });
+  const body={ options:"enable_pre_space",
+    requests:[{ writing_guide:{writing_area_width:Math.round(w), writing_area_height:Math.round(h)},
+                ink:ink, language:"en" }] };
+  const res=await fetch('https://inputtools.google.com/request?ime=handwriting&app=mobile&dbg=1&cs=1&oe=UTF-8',
+    { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const data=await res.json();
+  if(data[0]!=='SUCCESS' || !data[1] || !data[1][0]) throw new Error('no-result');
+  return data[1][0][1] || [];          // array of candidate strings, best first
+}
+async function autoCheck(){
+  if(!spItem) return;
+  if(!spStrokes.length){ spFeedback('Write the word first ✍️'); sayUI('writeit'); return; }
+  spFeedback('Reading your writing… 🔎');
+  sayUI('reading');
+  try{
+    const cands = await recognizeHandwriting(spStrokes, spcanvas.clientWidth, spcanvas.clientHeight);
+    const target = spItem.w.toLowerCase();
+    const got = cands.slice(0,10).map(c=>String(c).toLowerCase().replace(/[^a-z]/g,''));
+    const correct = got.includes(target);
+    if(correct){
+      spFeedback('🎉 Yes! You wrote <span class="reveal" style="font-size:1.2em;font-weight:900">'+wordHTML(spItem)+'</span> correctly!');
+      playSeq([{kind:'ui',name:'correctwriting',text:'Yes! You wrote it correctly!',rate:UI_RATE}]);
+      confetti();
+    }else{
+      const read = cands[0] ? cands[0] : '—';
+      spFeedback('I read “<b>'+read+'</b>”. The word is <span class="reveal" style="font-size:1.15em;font-weight:900">'+wordHTML(spItem)+'</span> — try again! ✍️');
+      playSeq([{kind:'ui',name:'almost',text:'Almost! The word is',rate:UI_RATE},
+               {kind:'words',name:target,text:spItem.w,rate:WORD_RATE}]);
+    }
+  }catch(e){
+    spFeedback('I could not read it automatically 😅 — press <b>👀 Show word</b> to check together.');
+    sayUI('couldnt');
+  }
+}
+
+/* ---- A) Writing journal (persists in the browser) ---- */
+let journal = [];
+try{ journal = JSON.parse(localStorage.getItem('writingJournal')||'[]'); }catch(e){ journal=[]; }
+function saveJournal(){ try{ localStorage.setItem('writingJournal', JSON.stringify(journal)); }
+  catch(e){ journal=journal.slice(-20); try{ localStorage.setItem('writingJournal', JSON.stringify(journal)); }catch(_){} } }
+function thumbOf(){
+  // shrink the canvas to a small JPEG to keep storage tiny
+  const tw=260, th=Math.round(tw*spcanvas.clientHeight/spcanvas.clientWidth);
+  const c=document.createElement('canvas'); c.width=tw; c.height=th;
+  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,tw,th);
+  x.drawImage(spcanvas,0,0,tw,th);
+  return c.toDataURL('image/jpeg',0.7);
+}
+function addToJournal(){
+  if(!spItem){ return; }
+  if(!spStrokes.length || !spcanvas.width || !spcanvas.height){ spFeedback('Write the word first ✍️'); sayUI('writeit'); return; }
+  journal.push({ w:spItem.w, d:spItem.d, img:thumbOf(), status:'todo', id:Date.now()+'-'+Math.round(performance.now()) });
+  if(journal.length>40) journal=journal.slice(-40);
+  saveJournal(); renderJournal();
+  spFeedback('💾 Saved to <b>My Writing</b> below!');
+  sayUI('saved');
+}
+function setStatus(id, st){
+  const it=journal.find(j=>j.id===id); if(!it) return;
+  it.status = (it.status===st)?'todo':st;   // tap again to clear
+  saveJournal(); renderJournal();
+}
+function clearJournal(){ journal=[]; saveJournal(); renderJournal(); }
+function renderJournal(){
+  const wrap=document.getElementById('journalwrap');
+  const el=document.getElementById('journal');
+  if(!journal.length){ wrap.style.display='none'; el.innerHTML=''; return; }
+  wrap.style.display='block';
+  el.innerHTML = journal.slice().reverse().map(j=>{
+    const cls = j.status==='ok'?'ok':(j.status==='redo'?'redo':'');
+    const label = j.status==='ok'?'✓ Great!':(j.status==='redo'?'✏️ Practice again':'');
+    const re=new RegExp('('+j.d+')','i');
+    const wh=j.w.replace(re,'<b style="color:var(--'+j.d+')">$1</b>');
+    return '<div class="jcard '+cls+'">'+
+      '<img src="'+j.img+'" alt="writing">'+
+      '<div class="jword">'+wh+'</div>'+
+      '<div class="jstat">'+label+'</div>'+
+      '<div class="jbtns">'+
+        '<button title="Great" onclick="setStatus(\''+j.id+'\',\'ok\')">✅</button>'+
+        '<button title="Practice again" onclick="setStatus(\''+j.id+'\',\'redo\')">✏️</button>'+
+        '<button title="Hear word" onclick="sayWord(\''+j.w+'\')">🔊</button>'+
+      '</div></div>';
+  }).join('');
+}
 function updateScore(){
   const s=document.getElementById('qscore');
   const stars='⭐'.repeat(Math.min(5,qScore));
@@ -715,6 +843,7 @@ document.getElementById('tracesound').onclick=()=>sayDigraph(traceLetters);
 /* ============ Init ============ */
 initNetToggle();
 updateVoiceUI();
+renderJournal();
 selectTab('sh');
 sizeCanvas();
 // iOS needs a user gesture to unlock audio; first tap anywhere primes it
