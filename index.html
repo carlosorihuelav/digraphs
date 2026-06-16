@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Digraph Friends! · sh · ch · th · wh · ph</title>
+<style>
+  :root{
+    --sh:#ff6b9d; --ch:#ffa931; --th:#37c8a8; --wh:#5b8def; --ph:#a06bff;
+    --ink:#2b2350; --soft:#fff;
+    --shadow:0 10px 0 rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
+  html,body{margin:0; padding:0; height:100%;}
+  body{
+    font-family:"Comic Sans MS","Chalkboard SE","Baloo 2",system-ui,-apple-system,sans-serif;
+    background:linear-gradient(160deg,#fff4e6 0%,#ffe6f2 45%,#e6f2ff 100%);
+    color:var(--ink);
+    min-height:100%;
+    overflow-x:hidden;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:18px 18px 80px;}
+
+  /* ---------- Header ---------- */
+  header{text-align:center; padding:14px 0 8px;}
+  h1{
+    font-size:clamp(34px,6vw,64px); margin:0; line-height:1.05;
+    color:var(--ink); text-shadow:2px 3px 0 #fff, 4px 6px 0 rgba(0,0,0,.06);
+  }
+  h1 .rainbow span{display:inline-block;}
+  .sub{font-size:clamp(16px,2.4vw,22px); margin:6px 0 0; opacity:.7; font-weight:bold;}
+
+  /* ---------- Speak buttons ---------- */
+  .speak{
+    border:none; cursor:pointer; border-radius:999px;
+    background:#fff; color:var(--ink); font-family:inherit; font-weight:bold;
+    box-shadow:var(--shadow); display:inline-flex; align-items:center; gap:8px;
+    transition:transform .08s ease;
+  }
+  .speak:active{transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  .speak.big{font-size:clamp(18px,2.6vw,26px); padding:16px 26px; margin:14px auto 0;}
+  .speak .ic{font-size:1.3em;}
+
+  .voicebar{display:flex; align-items:center; justify-content:center; gap:8px; margin:14px auto 0; font-weight:bold; opacity:.85; font-size:15px;}
+  .voicebar select{
+    font-family:inherit; font-weight:bold; font-size:15px; color:var(--ink);
+    border:none; background:#fff; border-radius:999px; padding:10px 16px;
+    box-shadow:var(--shadow); max-width:62vw;
+  }
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:22px 0 26px;}
+  .tab{
+    border:none; cursor:pointer; font-family:inherit; font-weight:900;
+    font-size:clamp(26px,4.6vw,42px); color:#fff;
+    width:clamp(86px,15vw,128px); height:clamp(86px,15vw,128px);
+    border-radius:28px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .12s ease, filter .12s ease; position:relative;
+  }
+  .tab small{position:absolute; bottom:8px; font-size:.34em; font-weight:bold; opacity:.9;}
+  .tab[data-d="sh"]{background:var(--sh);} .tab[data-d="ch"]{background:var(--ch);}
+  .tab[data-d="th"]{background:var(--th);} .tab[data-d="wh"]{background:var(--wh);}
+  .tab[data-d="ph"]{background:var(--ph);}
+  .tab.active{transform:translateY(-6px) scale(1.06); filter:saturate(1.2); outline:5px solid #fff;}
+
+  /* ---------- Lesson card ---------- */
+  .card{
+    background:var(--soft); border-radius:34px; padding:26px 22px 30px;
+    box-shadow:0 14px 0 rgba(0,0,0,.08); animation:pop .35s ease;
+  }
+  @keyframes pop{from{transform:scale(.96); opacity:0;} to{transform:scale(1); opacity:1;}}
+
+  .hero{display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap; text-align:center;}
+  .bigletters{
+    font-size:clamp(70px,16vw,150px); font-weight:900; line-height:1;
+    color:#fff; padding:10px 30px; border-radius:30px; box-shadow:var(--shadow);
+  }
+  .heroinfo{max-width:430px; text-align:left;}
+  .heroinfo .says{font-size:clamp(20px,3vw,30px); font-weight:bold; margin:0 0 6px;}
+  .heroinfo .sound{font-size:clamp(34px,6vw,56px); font-weight:900; margin:0;}
+  .heroinfo .mouth{font-size:clamp(15px,2.2vw,20px); opacity:.7; margin:8px 0 0;}
+
+  /* ---------- Word grid ---------- */
+  .words{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:16px; margin-top:26px;}
+  .word{
+    background:#fff; border-radius:26px; padding:16px 10px 14px; text-align:center; cursor:pointer;
+    box-shadow:0 8px 0 rgba(0,0,0,.07); border:4px solid #f1eef9;
+    transition:transform .1s ease;
+  }
+  .word:active{transform:translateY(5px) scale(.97);}
+  .word .emoji{font-size:clamp(46px,9vw,68px); line-height:1; display:block;}
+  .word .label{font-size:clamp(22px,3.4vw,30px); font-weight:900; margin-top:8px; letter-spacing:.5px;}
+  .word .label b{color:inherit;}
+  .word .hint{font-size:13px; opacity:.55; font-weight:bold; margin-top:2px;}
+  .word.playing{animation:wiggle .5s ease;}
+  @keyframes wiggle{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg) scale(1.05);}75%{transform:rotate(4deg) scale(1.05);}}
+
+  .sectionhead{display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin:8px 0 0;}
+  .sectionhead h2{font-size:clamp(24px,4vw,38px); margin:0;}
+
+  /* ---------- Videos ---------- */
+  .videos{margin-top:40px;}
+  .videogrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; margin-top:16px;}
+  .vid{background:#fff; border-radius:26px; padding:12px; box-shadow:0 10px 0 rgba(0,0,0,.07);}
+  .vid h3{margin:4px 0 10px; text-align:center; font-size:clamp(18px,2.6vw,24px);}
+  .vidframe{position:relative; width:100%; padding-top:56.25%; border-radius:18px; overflow:hidden;}
+  .vidframe iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+
+  /* ---------- Quiz ---------- */
+  .quiz{margin-top:40px; background:linear-gradient(135deg,#fff,#fef0f6); border-radius:34px; padding:26px 22px 32px; box-shadow:0 14px 0 rgba(0,0,0,.08); text-align:center;}
+  .quiz h2{font-size:clamp(26px,4.4vw,40px); margin:0 0 4px;}
+  .quizq{font-size:clamp(20px,3vw,28px); font-weight:bold; margin:14px 0 4px; min-height:1.4em;}
+  .quizemoji{font-size:clamp(70px,14vw,120px); line-height:1; margin:6px 0;}
+  .choices{display:flex; flex-wrap:wrap; justify-content:center; gap:14px; margin-top:14px;}
+  .choice{
+    border:none; cursor:pointer; font-family:inherit; font-weight:900; color:#fff;
+    font-size:clamp(30px,5vw,46px); width:clamp(90px,16vw,120px); height:clamp(90px,16vw,120px);
+    border-radius:26px; box-shadow:var(--shadow); transition:transform .1s ease;
+  }
+  .choice:active{transform:translateY(5px);}
+  .choice.right{animation:correct .6s ease;} .choice.wrong{animation:shake .4s ease; opacity:.5;}
+  @keyframes correct{0%,100%{transform:scale(1);}40%{transform:scale(1.25);}}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+  .score{font-size:clamp(18px,2.6vw,24px); font-weight:bold; margin-top:16px;}
+  .stars{font-size:28px; letter-spacing:4px;}
+
+  /* ---------- Trace ---------- */
+  .trace{margin-top:40px; background:#fff; border-radius:34px; padding:26px 22px 30px; box-shadow:0 14px 0 rgba(0,0,0,.08); text-align:center;}
+  .trace h2{font-size:clamp(26px,4.4vw,40px); margin:0 0 4px;}
+  .tracebox{position:relative; width:100%; max-width:640px; margin:16px auto 0; border-radius:24px; overflow:hidden; border:5px dashed #e7e2f5; background:#fbfaff;}
+  .tracebox canvas{display:block; width:100%; touch-action:none;}
+  .tracetools{display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:16px;}
+
+  /* ---------- Spelling ---------- */
+  #spinput{
+    font-family:inherit; font-weight:900; text-align:center;
+    font-size:clamp(30px,6vw,48px); letter-spacing:3px; color:var(--ink);
+    border:5px solid #e7e2f5; border-radius:22px; background:#fff;
+    padding:14px 18px; width:min(92%,440px); margin:6px auto 4px;
+    box-shadow:0 8px 0 rgba(0,0,0,.06); outline:none;
+  }
+  #spinput:focus{border-color:var(--sh);}
+  #spinput.ok{border-color:var(--th); color:var(--th);}
+  #spinput.no{border-color:#ff5a72; animation:shake .4s ease;}
+  .spellfeedback{font-size:clamp(20px,3.2vw,30px); font-weight:900; min-height:1.4em; margin:10px 0 4px;}
+  .spellfeedback .reveal b{letter-spacing:1px;}
+
+  footer{text-align:center; margin-top:40px; opacity:.5; font-size:14px; font-weight:bold;}
+
+  /* confetti */
+  .confetti{position:fixed; top:-20px; font-size:26px; pointer-events:none; z-index:50; animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg); opacity:.9;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🎈 Digraph Friends! 🎈</h1>
+    <p class="sub">Two letters, one special sound</p>
+    <button class="speak big" onclick="say('Welcome! Today we learn digraphs. A digraph is two letters that make one sound. Tap a colored button to start, then tap the words to hear them. Have fun!')">
+      <span class="ic">🔊</span> Listen to instructions
+    </button>
+    <div class="voicebar">
+      <span>🗣️ Voice:</span>
+      <select id="voicePick" aria-label="Choose a voice"></select>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tabs" id="tabs"></nav>
+
+  <!-- Lesson -->
+  <section class="card" id="lesson"></section>
+
+  <!-- Trace -->
+  <section class="trace" id="trace">
+    <div class="sectionhead">
+      <h2>✏️ Trace the Letters</h2>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Use your finger or pencil to trace the letters. Follow the gray shape. Say the sound while you write!')"><span class="ic">🔊</span> Listen</button>
+    </div>
+    <div class="tracebox"><canvas id="tcanvas"></canvas></div>
+    <div class="tracetools">
+      <button class="speak" style="padding:12px 20px;font-size:18px" onclick="clearTrace()"><span class="ic">🧽</span> Clear</button>
+      <button class="speak" style="padding:12px 20px;font-size:18px" id="tracesound"><span class="ic">🔊</span> Say the sound</button>
+    </div>
+  </section>
+
+  <!-- Videos -->
+  <section class="videos">
+    <div class="sectionhead">
+      <h2>🎬 Watch &amp; Learn</h2>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Watch these two videos to hear all the digraph sounds. Sing along!')"><span class="ic">🔊</span> Listen</button>
+    </div>
+    <div class="videogrid">
+      <div class="vid">
+        <h3>Video 1 🎵</h3>
+        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/JajpqcODbCE?rel=0" title="Digraphs video 1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+      </div>
+      <div class="vid">
+        <h3>Video 2 🎵</h3>
+        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/TBA-R3Sx1Pc?rel=0" title="Digraphs video 2" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quiz -->
+  <section class="quiz" id="quiz">
+    <h2>🌟 Listening Game</h2>
+    <div class="sectionhead" style="margin-top:6px">
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Listen to the word and look at the picture. Which two letters make the sound? Tap the right answer!')"><span class="ic">🔊</span> How to play</button>
+    </div>
+    <div class="quizemoji" id="qemoji">🎯</div>
+    <div class="quizq" id="qword">Press START to play!</div>
+    <button class="speak" id="qreplay" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 6px"><span class="ic">🔊</span> Hear it again</button>
+    <div class="choices" id="qchoices"></div>
+    <button class="speak big" id="qnext" style="display:none" onclick="nextQuestion()"><span class="ic">➡️</span> Next word</button>
+    <div class="score" id="qscore"></div>
+    <button class="speak big" id="qstart" onclick="startQuiz()"><span class="ic">▶️</span> START</button>
+  </section>
+
+  <!-- Spelling -->
+  <section class="quiz" id="spell">
+    <h2>✍️ Write the Words</h2>
+    <div class="sectionhead" style="margin-top:6px">
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Look at the picture and listen to the word. Then type the word with the keyboard. Press Check to see if it is correct!')"><span class="ic">🔊</span> How to play</button>
+    </div>
+    <div class="quizemoji" id="spemoji">✏️</div>
+    <button class="speak" id="sphear" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the word</button>
+    <div>
+      <input id="spinput" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="type here…" style="display:none" />
+    </div>
+    <div class="spellfeedback" id="spfeedback"></div>
+    <div class="choices" id="spbuttons" style="display:none">
+      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="checkSpell()"><span class="ic">✅</span> Check</button>
+      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="showSpell()"><span class="ic">👀</span> Show word</button>
+      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="nextSpell()"><span class="ic">➡️</span> Next</button>
+    </div>
+    <div class="score" id="spscore"></div>
+    <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
+  </section>
+
+  <footer>Made with ❤️ for a smart reader · sh · ch · th · wh · ph</footer>
+</div>
+
+<script>
+/* ============ Data ============ */
+const DIGRAPHS = {
+  sh:{ color:'var(--sh)', sound:'“shh”, like a quiet sound', say:'The letters S and H make the sound at the beginning of ship. Listen. Ship. Sheep. Fish.',
+       words:[
+         {w:'ship',e:'🚢'},{w:'shark',e:'🦈'},{w:'shell',e:'🐚'},
+         {w:'sheep',e:'🐑'},{w:'shoe',e:'👟'},{w:'fish',e:'🐟'},
+         {w:'shirt',e:'👕'},{w:'brush',e:'🪥'},{w:'shop',e:'🛍️'},
+         {w:'shower',e:'🚿'},{w:'wash',e:'🧼'},{w:'dish',e:'🍽️'}
+       ]},
+  ch:{ color:'var(--ch)', sound:'“ch”, like a little train', say:'The letters C and H make the sound at the beginning of chair. Listen. Chair. Cheese. Cherry.',
+       words:[
+         {w:'chair',e:'🪑'},{w:'cheese',e:'🧀'},{w:'cherry',e:'🍒'},
+         {w:'chicken',e:'🐔'},{w:'chocolate',e:'🍫'},{w:'church',e:'⛪'},
+         {w:'lunch',e:'🍱'},{w:'beach',e:'🏖️'},{w:'chips',e:'🍟'},
+         {w:'watch',e:'⌚'},{w:'peach',e:'🍑'},{w:'teacher',e:'🧑‍🏫'}
+       ]},
+  th:{ color:'var(--th)', sound:'“th”, put your tongue between your teeth', say:'The letters T and H make the sound at the beginning of thumb. Put your tongue between your teeth. Listen. Thumb. Three. Bath.',
+       words:[
+         {w:'thumb',e:'👍'},{w:'three',e:'3️⃣'},{w:'teeth',e:'🦷'},
+         {w:'bath',e:'🛁'},{w:'feather',e:'🪶'},{w:'mouth',e:'👄'},
+         {w:'thunder',e:'⛈️'},{w:'moth',e:'🦋'},{w:'math',e:'➗'},
+         {w:'think',e:'🤔'},{w:'north',e:'🧭'},{w:'cloth',e:'🧣'}
+       ]},
+  wh:{ color:'var(--wh)', sound:'“wh”, blow a little air', say:'The letters W and H make the sound at the beginning of whale. Listen. Whale. Wheel. White.',
+       words:[
+         {w:'whale',e:'🐳'},{w:'wheel',e:'☸️'},{w:'white',e:'🤍'},
+         {w:'wheat',e:'🌾'},{w:'whistle',e:'😗'},{w:'whisk',e:'🥄'},
+         {w:'what',e:'❓'},{w:'wheelchair',e:'🦽'},{w:'whisper',e:'🤫'},
+         {w:'why',e:'🤷'},{w:'whiskers',e:'🐱'},{w:'where',e:'📍'}
+       ]},
+  ph:{ color:'var(--ph)', sound:'“ph” says “f”!', say:'The letters P and H make the F sound. Listen. Phone. Photo. Elephant.',
+       words:[
+         {w:'phone',e:'📱'},{w:'photo',e:'📷'},{w:'elephant',e:'🐘'},
+         {w:'dolphin',e:'🐬'},{w:'graph',e:'📈'},{w:'alphabet',e:'🔤'},
+         {w:'trophy',e:'🏆'},{w:'phantom',e:'👻'},{w:'pharmacy',e:'💊'},
+         {w:'microphone',e:'🎤'},{w:'sphere',e:'🔵'},{w:'nephew',e:'👦'}
+       ]}
+};
+const ORDER = ['sh','ch','th','wh','ph'];
+
+/* ============ Speech ============ */
+let enVoice = null;
+let enVoices = [];
+
+// Score voices so the most natural-sounding one wins.
+function scoreVoice(v){
+  const n=(v.name||'').toLowerCase();
+  let s=0;
+  if(!/^en/i.test(v.lang)) return -1;                 // English only
+  if(/en[-_]us/i.test(v.lang)) s+=8; else if(/en[-_]gb/i.test(v.lang)) s+=6; else s+=3;
+  // High quality markers
+  if(/enhanced|premium|neural|natural/.test(n)) s+=40;
+  if(/siri/.test(n)) s+=35;
+  if(/google/.test(n)) s+=25;                          // Chrome's Google voices are very natural
+  if(/microsoft/.test(n) && /natural|online/.test(n)) s+=30;
+  // Pleasant default Apple voices
+  if(/samantha|ava|allison|susan|nicky|karen|zoe|serena|moira|tessa|aaron/.test(n)) s+=18;
+  if(/daniel|arthur|oliver|tom|alex/.test(n)) s+=12;
+  // Penalize the old robotic / novelty voices
+  if(/fred|albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|hysterical|jester|organ|superstar|trinoids|whisper|wobble|zarvox|eloquence|compact|grandma|grandpa|reed|rocko|sandy|shelley|flo|eddy/.test(n)) s-=50;
+  if(v.localService===false) s+=4;                    // network voices tend to be richer
+  return s;
+}
+
+function refreshVoices(saved){
+  const vs = speechSynthesis.getVoices();
+  enVoices = vs.filter(v=>/^en/i.test(v.lang)).sort((a,b)=>scoreVoice(b)-scoreVoice(a));
+  const stored = saved || localStorage.getItem('voiceURI');
+  enVoice = (stored && enVoices.find(v=>v.voiceURI===stored)) || enVoices[0] || vs[0] || null;
+  buildVoicePicker();
+}
+
+function buildVoicePicker(){
+  const sel=document.getElementById('voicePick');
+  if(!sel || !enVoices.length) return;
+  sel.innerHTML='';
+  enVoices.forEach(v=>{
+    const o=document.createElement('option');
+    o.value=v.voiceURI;
+    let tag=/enhanced|premium|neural|natural|siri/i.test(v.name)?' ⭐':'';
+    o.textContent=v.name.replace(/\s*\(.*?\)/,'')+' ('+v.lang+')'+tag;
+    if(enVoice && v.voiceURI===enVoice.voiceURI) o.selected=true;
+    sel.appendChild(o);
+  });
+  sel.onchange=()=>{
+    enVoice=enVoices.find(v=>v.voiceURI===sel.value)||enVoice;
+    localStorage.setItem('voiceURI', sel.value);
+    say('Hi! This is my new voice. Let us read together!');
+  };
+}
+
+if('speechSynthesis' in window){
+  refreshVoices();
+  speechSynthesis.onvoiceschanged = ()=>refreshVoices();
+}
+
+function say(text, rate=0.9){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = enVoice ? enVoice.lang : 'en-US';
+  u.rate = rate;        // a touch slower = clearer for a new reader
+  u.pitch = 1.0;        // natural pitch (1.1 sounded more robotic)
+  if(enVoice) u.voice=enVoice;
+  speechSynthesis.speak(u);
+}
+
+/* ============ Build tabs ============ */
+const tabsEl = document.getElementById('tabs');
+ORDER.forEach(d=>{
+  const b=document.createElement('button');
+  b.className='tab'; b.dataset.d=d;
+  b.innerHTML = d.toUpperCase()+'<small>tap me</small>';
+  b.onclick=()=>{ selectTab(d); say(DIGRAPHS[d].say); };
+  tabsEl.appendChild(b);
+});
+
+/* ============ Render lesson ============ */
+const lessonEl = document.getElementById('lesson');
+function selectTab(d){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.d===d));
+  traceLetters=d;
+  if(typeof drawGuide==='function') drawGuide();
+  const data = DIGRAPHS[d];
+  const up = d.toUpperCase();
+  let words = data.words.map(o=>{
+    // bold the digraph inside the word
+    const re = new RegExp('('+d+')','i');
+    const html = o.w.replace(re,'<b style="color:'+data.color+'">$1</b>');
+    return `<div class="word" onclick="playWord(this,'${o.w}')">
+        <span class="emoji">${o.e}</span>
+        <span class="label">${html}</span>
+        <span class="hint">tap to hear 🔊</span>
+      </div>`;
+  }).join('');
+
+  lessonEl.innerHTML = `
+    <div class="hero">
+      <div class="bigletters" style="background:${data.color}">${up}</div>
+      <div class="heroinfo">
+        <p class="says">The letters ${d.split('').join(' and ')} together…</p>
+        <p class="sound" style="color:${data.color}">${data.sound}</p>
+        <p class="mouth">Listen and say it with me!</p>
+        <button class="speak" style="margin-top:10px" onclick="say(DIGRAPHS['${d}'].say, 0.82)">
+          <span class="ic">🔊</span> Hear the sound
+        </button>
+      </div>
+    </div>
+    <div class="sectionhead" style="margin-top:24px">
+      <h2 style="color:${data.color}">Words with ${up}</h2>
+      <button class="speak" style="padding:10px 16px;font-size:17px" onclick="readAll('${d}')"><span class="ic">🔊</span> Read all</button>
+    </div>
+    <div class="words">${words}</div>
+  `;
+}
+function playWord(el,w){
+  document.querySelectorAll('.word').forEach(x=>x.classList.remove('playing'));
+  el.classList.add('playing');
+  setTimeout(()=>el.classList.remove('playing'),600);
+  say(w, 0.85);
+}
+function readAll(d){
+  const words = DIGRAPHS[d].words.map(o=>o.w);
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  words.forEach((w,i)=>{
+    const u=new SpeechSynthesisUtterance(w);
+    u.lang='en-US'; u.rate=0.85; u.pitch=1.1; if(enVoice)u.voice=enVoice;
+    speechSynthesis.speak(u);
+  });
+}
+
+/* ============ Quiz ============ */
+let qScore=0, qTotal=0, qAnswer=null, qPool=[], qItem=null, qAnswered=false, qTimer=null;
+function buildPool(){
+  qPool=[];
+  ORDER.forEach(d=> DIGRAPHS[d].words.forEach(o=> qPool.push({...o,d})));
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+// Speak a word slowly, a few times, with a pause between each.
+function speakRepeat(word, times=3, gap=900){
+  if(!('speechSynthesis' in window)) return;
+  if(qTimer){ clearTimeout(qTimer); qTimer=null; }
+  speechSynthesis.cancel();
+  let count=0;
+  function once(){
+    const u=new SpeechSynthesisUtterance(word);
+    u.lang = enVoice ? enVoice.lang : 'en-US';
+    u.rate = 0.65;   // slow and clear
+    u.pitch = 1.0;
+    if(enVoice) u.voice=enVoice;
+    u.onend=()=>{ count++; if(count<times){ qTimer=setTimeout(once, gap); } };
+    speechSynthesis.speak(u);
+  }
+  once();
+}
+
+function startQuiz(){
+  buildPool(); qScore=0; qTotal=0;
+  document.getElementById('qstart').innerHTML='<span class="ic">🔄</span> Play again';
+  nextQuestion();
+}
+function nextQuestion(){
+  qAnswered=false;
+  qItem = qPool[Math.floor(Math.random()*qPool.length)];
+  qAnswer=qItem.d;
+  document.getElementById('qemoji').textContent=qItem.e;
+  document.getElementById('qword').textContent='Listen carefully… 👂';
+  document.getElementById('qreplay').style.display='inline-flex';
+  document.getElementById('qnext').style.display='none';
+  // gentle intro, then say the word 3 times spaced out
+  say('Listen.', 0.9);
+  qTimer=setTimeout(()=>speakRepeat(qItem.w, 3, 950), 900);
+  // choices: correct + 2 random others
+  let opts=new Set([qItem.d]);
+  while(opts.size<3){ opts.add(ORDER[Math.floor(Math.random()*ORDER.length)]); }
+  const arr=shuffle([...opts]);
+  const ch=document.getElementById('qchoices');
+  ch.innerHTML='';
+  arr.forEach(d=>{
+    const b=document.createElement('button');
+    b.className='choice'; b.style.background='var(--'+d+')';
+    b.textContent=d.toUpperCase();
+    b.onclick=()=>answer(b,d);
+    ch.appendChild(b);
+  });
+  updateScore();
+}
+// Show the word in writing, with the digraph highlighted in its color.
+function revealWord(item){
+  const re=new RegExp('('+item.d+')','i');
+  const html=item.w.replace(re,'<b style="color:var(--'+item.d+')">$1</b>');
+  document.getElementById('qword').innerHTML =
+    '<span style="font-size:clamp(34px,6vw,54px);font-weight:900;letter-spacing:1px">'+html+'</span>';
+}
+function answer(btn,d){
+  if(qAnswered) return;          // one answer per question
+  qAnswered=true; qTotal++;
+  if(qTimer){ clearTimeout(qTimer); qTimer=null; }
+  speechSynthesis.cancel();
+  // lock all choices
+  document.querySelectorAll('#qchoices .choice').forEach(b=>b.style.pointerEvents='none');
+  revealWord(qItem);             // always show the written word at the end
+  if(d===qAnswer){
+    btn.classList.add('right'); qScore++;
+    say('Yes! '+qItem.w+'. Great job!',0.85);
+    confetti();
+  }else{
+    btn.classList.add('wrong');
+    say('Almost! The word is '+qItem.w+'. It has the '+qItem.d.split('').join(' ')+' sound.',0.8);
+  }
+  document.getElementById('qnext').style.display='inline-flex';  // advance only when she taps
+  updateScore();
+}
+document.getElementById('qreplay').onclick=()=>{ if(qItem) speakRepeat(qItem.w, 3, 950); };
+
+/* ============ Spelling ============ */
+let spItem=null, spDone=false, spScore=0, spTotal=0;
+function startSpell(){
+  buildPool(); spScore=0; spTotal=0;
+  document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
+  document.getElementById('spinput').style.display='block';
+  document.getElementById('spbuttons').style.display='flex';
+  document.getElementById('sphear').style.display='inline-flex';
+  nextSpell();
+}
+function nextSpell(){
+  spDone=false;
+  spItem=qPool[Math.floor(Math.random()*qPool.length)];
+  document.getElementById('spemoji').textContent=spItem.e;
+  const inp=document.getElementById('spinput');
+  inp.value=''; inp.className=''; inp.disabled=false;
+  document.getElementById('spfeedback').innerHTML='Type the word you hear 👂';
+  speakRepeat(spItem.w, 2, 950);
+  setTimeout(()=>inp.focus(), 50);
+  updateSpScore();
+}
+function checkSpell(){
+  if(!spItem || spDone) return;
+  const inp=document.getElementById('spinput');
+  const guess=inp.value.trim().toLowerCase().replace(/\s+/g,'');
+  if(!guess){ say('Type the word first.'); return; }
+  spTotal++;
+  if(guess===spItem.w.toLowerCase()){
+    spDone=true; spScore++;
+    inp.classList.remove('no'); inp.classList.add('ok'); inp.disabled=true;
+    revealSpell('🎉 Yes! You spelled it!');
+    say('Yes! '+spItem.w+'. You spelled it. Great job!',0.85);
+    confetti();
+  }else{
+    inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
+    document.getElementById('spfeedback').innerHTML='Not yet — listen again and try! 👂';
+    say('Not yet. Listen again.',0.85);
+    speakRepeat(spItem.w, 2, 950);
+  }
+  updateSpScore();
+}
+function showSpell(){
+  if(!spItem) return;
+  spDone=true;
+  document.getElementById('spinput').disabled=true;
+  revealSpell('The word is:');
+  say('The word is '+spItem.w,0.85);
+}
+function revealSpell(msg){
+  const re=new RegExp('('+spItem.d+')','i');
+  const html=spItem.w.replace(re,'<b style="color:var(--'+spItem.d+')">$1</b>');
+  document.getElementById('spfeedback').innerHTML =
+    msg+' <span class="reveal" style="font-size:1.25em;font-weight:900">'+html+'</span>';
+}
+function updateSpScore(){
+  const s=document.getElementById('spscore');
+  s.innerHTML = spTotal? `Words: ${spScore} / ${spTotal} ⭐` : '';
+}
+document.getElementById('sphear').onclick=()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); };
+document.getElementById('spinput').addEventListener('keydown',e=>{ if(e.key==='Enter') checkSpell(); });
+function updateScore(){
+  const s=document.getElementById('qscore');
+  const stars='⭐'.repeat(Math.min(5,qScore));
+  s.innerHTML = qTotal? `Score: ${qScore} / ${qTotal}<br><span class="stars">${stars||'✨'}</span>` : '';
+}
+function confetti(){
+  const em=['🎉','⭐','🎈','✨','🌟','🥳'];
+  for(let i=0;i<18;i++){
+    const c=document.createElement('div');
+    c.className='confetti'; c.textContent=em[Math.floor(Math.random()*em.length)];
+    c.style.left=Math.random()*100+'vw';
+    c.style.animationDuration=(1.5+Math.random()*1.5)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3200);
+  }
+}
+
+/* ============ Trace ============ */
+const tcanvas=document.getElementById('tcanvas');
+const tctx=tcanvas.getContext('2d');
+let traceColor='var(--sh)', traceLetters='sh', drawing=false;
+const COLORHEX={sh:'#ff6b9d',ch:'#ffa931',th:'#37c8a8',wh:'#5b8def',ph:'#a06bff'};
+
+function sizeCanvas(){
+  const box=tcanvas.parentElement;
+  const w=box.clientWidth, h=Math.round(w*0.5);
+  const dpr=window.devicePixelRatio||1;
+  // keep current drawing
+  const prev=tcanvas.toDataURL();
+  tcanvas.width=w*dpr; tcanvas.height=h*dpr;
+  tcanvas.style.height=h+'px';
+  tctx.setTransform(dpr,0,0,dpr,0,0);
+  drawGuide();
+  if(prev && tcanvas.width>0){ const img=new Image(); img.onload=()=>tctx.drawImage(img,0,0,w,h); img.src=prev; }
+}
+function drawGuide(){
+  const w=tcanvas.clientWidth, h=tcanvas.clientHeight;
+  tctx.clearRect(0,0,w,h);
+  // dashed middle line
+  tctx.save();
+  tctx.strokeStyle='#e7e2f5'; tctx.lineWidth=2; tctx.setLineDash([10,10]);
+  tctx.beginPath(); tctx.moveTo(0,h/2); tctx.lineTo(w,h/2); tctx.stroke();
+  tctx.restore();
+  // faint guide letters
+  tctx.save();
+  tctx.fillStyle='rgba(120,110,160,.16)';
+  tctx.font='900 '+Math.round(h*0.72)+'px "Comic Sans MS","Chalkboard SE",sans-serif';
+  tctx.textAlign='center'; tctx.textBaseline='middle';
+  tctx.fillText(traceLetters.toUpperCase(), w/2, h/2+h*0.02);
+  tctx.restore();
+}
+function clearTrace(){ drawGuide(); }
+function posFromEvent(e){
+  const r=tcanvas.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:t.clientX-r.left, y:t.clientY-r.top};
+}
+function startDraw(e){ drawing=true; const p=posFromEvent(e); tctx.beginPath(); tctx.moveTo(p.x,p.y); e.preventDefault(); }
+function moveDraw(e){
+  if(!drawing) return;
+  const p=posFromEvent(e);
+  tctx.strokeStyle=COLORHEX[traceLetters]||'#ff6b9d';
+  tctx.lineWidth=14; tctx.lineCap='round'; tctx.lineJoin='round';
+  tctx.lineTo(p.x,p.y); tctx.stroke(); tctx.beginPath(); tctx.moveTo(p.x,p.y);
+  e.preventDefault();
+}
+function endDraw(){ drawing=false; }
+tcanvas.addEventListener('pointerdown',startDraw);
+tcanvas.addEventListener('pointermove',moveDraw);
+tcanvas.addEventListener('pointerup',endDraw);
+tcanvas.addEventListener('pointercancel',endDraw);
+tcanvas.addEventListener('pointerleave',endDraw);
+window.addEventListener('resize',sizeCanvas);
+document.getElementById('tracesound').onclick=()=>say(DIGRAPHS[traceLetters].say);
+
+/* ============ Init ============ */
+selectTab('sh');
+sizeCanvas();
+// iOS needs a user gesture to unlock audio; first tap anywhere primes it
+document.body.addEventListener('touchstart',function prime(){
+  if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }
+  document.body.removeEventListener('touchstart',prime);
+},{once:true});
+</script>
+</body>
+</html>
