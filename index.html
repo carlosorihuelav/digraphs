@@ -136,6 +136,12 @@
   .qchoice.reveal-correct{border-color:var(--th); box-shadow:0 8px 0 rgba(55,200,168,.25);}
 
   .score{font-size:clamp(18px,2.6vw,24px); font-weight:bold; margin-top:16px;}
+
+  /* result star (fills by % correct) */
+  .starwrap{text-align:center; animation:pop .5s ease;}
+  .bigstar{width:clamp(150px,42vw,240px); height:auto; filter:drop-shadow(0 8px 6px rgba(224,168,0,.25));}
+  .starpct{font-size:clamp(28px,5vw,40px); font-weight:900; color:#E0A800; margin-top:2px;}
+  .resultmsg{font-size:clamp(20px,3.2vw,28px); font-weight:900; margin:8px 0 4px;}
   .stars{font-size:28px; letter-spacing:4px;}
 
   /* ---------- Trace ---------- */
@@ -201,7 +207,10 @@
     </div>
   </header>
 
-  <!-- Videos (reference videos from the teachers, at the top) -->
+  <!-- Tabs (digraph selection first) -->
+  <nav class="tabs" id="tabs" style="margin-top:10px"></nav>
+
+  <!-- Videos (reference videos from the teachers) -->
   <section class="videos" style="margin-top:24px">
     <div class="sectionhead">
       <h2>🎬 Watch &amp; Learn</h2>
@@ -218,9 +227,6 @@
       </div>
     </div>
   </section>
-
-  <!-- Tabs -->
-  <nav class="tabs" id="tabs"></nav>
 
   <!-- Lesson -->
   <section class="card" id="lesson"></section>
@@ -248,7 +254,8 @@
     <div class="quizq" id="qword">Press START to play!</div>
     <button class="speak" id="qreplay" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the word</button>
     <div class="qchoices" id="qchoices"></div>
-    <button class="speak big" id="qnext" style="display:none" onclick="nextQuestion()"><span class="ic">➡️</span> Next word</button>
+    <button class="speak big" id="qnext" style="display:none" onclick="qAdvance()"><span class="ic">➡️</span> Next word</button>
+    <div id="qresult" style="display:none"></div>
     <div class="score" id="qscore"></div>
     <button class="speak big" id="qstart" onclick="startQuiz()"><span class="ic">▶️</span> START</button>
   </section>
@@ -264,21 +271,11 @@
     <div class="tracebox" id="spbox" style="display:none"><canvas id="spcanvas"></canvas></div>
     <div class="spellfeedback" id="spfeedback"></div>
     <div class="choices" id="spbuttons" style="display:none">
-      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="autoCheck()"><span class="ic">🔎</span> Check</button>
-      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="addToJournal()"><span class="ic">💾</span> Save</button>
-      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="showSpell()"><span class="ic">👀</span> Show word</button>
-      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="clearSpell()"><span class="ic">🧽</span> Clear</button>
-      <button class="speak" style="padding:14px 20px;font-size:19px" onclick="nextSpell()"><span class="ic">➡️</span> Next</button>
+      <button class="speak big" style="padding:16px 30px" onclick="checkSpell()"><span class="ic">🔎</span> Check</button>
     </div>
+    <div id="spresult" style="display:none"></div>
+    <div class="score" id="spscore"></div>
     <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
-
-    <div id="journalwrap" style="display:none;margin-top:18px">
-      <div class="sectionhead">
-        <h3 style="margin:0;font-size:clamp(20px,3vw,28px)">📒 My Writing</h3>
-        <button class="speak" style="padding:8px 14px;font-size:15px" onclick="clearJournal()"><span class="ic">🗑️</span> Clear all</button>
-      </div>
-      <div class="journal" id="journal"></div>
-    </div>
   </section>
 
   <footer>Made with ❤️ for a smart reader · sh · ch · th · wh · ph</footer>
@@ -544,17 +541,47 @@ async function readAll(d){
   }
 }
 
+/* ============ Shared game helpers ============ */
+const ROUNDS = 15;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+// A big star that fills yellow from the bottom up to `pct`% correct.
+function starHTML(idp, pct){
+  const fill=Math.max(0,Math.min(100,Math.round(pct)));
+  const gid=idp+'-star-grad';
+  return '<div class="starwrap"><svg viewBox="0 0 100 100" class="bigstar" role="img" aria-label="'+fill+' percent">'+
+    '<defs><linearGradient id="'+gid+'" x1="0" y1="1" x2="0" y2="0">'+
+      '<stop offset="0%" stop-color="#FFD43B"/><stop offset="'+fill+'%" stop-color="#FFD43B"/>'+
+      '<stop offset="'+fill+'%" stop-color="#ece8f7"/><stop offset="100%" stop-color="#ece8f7"/>'+
+    '</linearGradient></defs>'+
+    '<path d="M50 6 L61.8 38.2 L96 38.8 L68.5 59.6 L78.6 92.5 L50 72.6 L21.4 92.5 L31.5 59.6 L4 38.8 L38.2 38.2 Z" '+
+      'fill="url(#'+gid+')" stroke="#E0A800" stroke-width="3.5" stroke-linejoin="round"/>'+
+    '</svg><div class="starpct">'+fill+'%</div></div>';
+}
+function praiseFor(p){ return p>=90?'Amazing! 🌟':(p>=70?'Great job! ⭐':(p>=50?'Good work! 👍':'Keep practicing! 💪')); }
+
 /* ============ Quiz: listen → tap the right word (current digraph only) ============ */
 let qScore=0, qTotal=0, qAnswer=null, qItem=null, qAnswered=false, qTimer=null, quizStarted=false;
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function updateQuizTag(){
   const t=document.getElementById('quizTag');
   if(t){ t.textContent=currentDigraph.toUpperCase(); t.style.color='var(--'+currentDigraph+')'; }
 }
 function startQuiz(){
   quizStarted=true; qScore=0; qTotal=0;
+  document.getElementById('qresult').style.display='none';
+  ['qemoji','qword','qscore'].forEach(id=>document.getElementById(id).style.display='');
   document.getElementById('qstart').innerHTML='<span class="ic">🔄</span> Play again';
   nextQuestion();
+}
+function qAdvance(){ if(qTotal>=ROUNDS) showQuizResult(); else nextQuestion(); }
+function showQuizResult(){
+  ['qemoji','qword','qreplay','qchoices','qnext','qscore'].forEach(id=>document.getElementById(id).style.display='none');
+  const pct=Math.round(qScore/ROUNDS*100);
+  document.getElementById('qresult').innerHTML =
+    starHTML('q', pct)+'<div class="resultmsg">You got <b>'+qScore+' / '+ROUNDS+'</b> right!<br>'+praiseFor(pct)+'</div>';
+  document.getElementById('qresult').style.display='block';
+  document.getElementById('qstart').style.display='inline-flex';
+  playSeq([{kind:'ui',name:'finished',text:'You finished! Look at your star!',rate:UI_RATE}]);
+  confetti();
 }
 function nextQuestion(silent){
   qAnswered=false;
@@ -602,7 +629,9 @@ function answer(btn,w){
     playSeq([{kind:'ui',name:'almost',text:'Almost! The word is',rate:UI_RATE},
              {kind:'words',name:qItem.w.toLowerCase(),text:qItem.w,rate:WORD_RATE}]);
   }
-  document.getElementById('qnext').style.display='inline-flex';  // advance only when she taps
+  const nx=document.getElementById('qnext');
+  nx.innerHTML = (qTotal>=ROUNDS) ? '<span class="ic">⭐</span> See my star' : '<span class="ic">➡️</span> Next word';
+  nx.style.display='inline-flex';  // advance only when she taps
   updateScore();
 }
 document.getElementById('qreplay').onclick=()=>{ if(qItem) speakRepeat(qItem.w, 3, 950); };
@@ -667,31 +696,28 @@ spcanvas.addEventListener('pointerup',spEnd);
 spcanvas.addEventListener('pointercancel',spEnd);
 spcanvas.addEventListener('pointerleave',spEnd);
 
+let spAttempt=1, spScore=0, spTotal=0, spChecking=false;
 function startSpell(){
-  document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
+  spScore=0; spTotal=0;
+  document.getElementById('spresult').style.display='none';
+  ['spemoji','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='');
   document.getElementById('spbox').style.display='block';
   document.getElementById('spbuttons').style.display='flex';
   document.getElementById('sphear').style.display='inline-flex';
+  document.getElementById('spstart').style.display='none';
+  document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
   sizeSpCanvas();
   nextSpell();
 }
 function nextSpell(silent){
+  spAttempt=1;
   const pool=spellWords();
   spItem=pool[Math.floor(Math.random()*pool.length)];
   document.getElementById('spemoji').textContent=spItem.e;
   document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
   drawSpGuide(); resetInk();
+  updateSpScore();
   if(!silent) speakRepeat(spItem.w, 2, 950);
-}
-function showSpell(){
-  if(!spItem) return;
-  const re=new RegExp('('+spItem.d+')','i');
-  const html=spItem.w.replace(re,'<b style="color:var(--'+spItem.d+')">$1</b>');
-  document.getElementById('spfeedback').innerHTML =
-    'The word is: <span class="reveal" style="font-size:1.3em;font-weight:900">'+html+'</span>';
-  playSeq([{kind:'ui',name:'thewordis',text:'The word is',rate:UI_RATE},
-           {kind:'words',name:spItem.w.toLowerCase(),text:spItem.w,rate:WORD_RATE},
-           {kind:'ui',name:'checkwriting',text:'Now check your writing!',rate:UI_RATE}]);
 }
 document.getElementById('sphear').onclick=()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); };
 
@@ -717,85 +743,65 @@ async function recognizeHandwriting(strokes, w, h){
   if(data[0]!=='SUCCESS' || !data[1] || !data[1][0]) throw new Error('no-result');
   return data[1][0][1] || [];          // array of candidate strings, best first
 }
-async function autoCheck(){
-  if(!spItem) return;
+function wordBig(item){ return '<span class="reveal" style="font-size:1.25em;font-weight:900">'+wordHTML(item)+'</span>'; }
+async function checkSpell(){
+  if(!spItem || spChecking) return;
   if(!spStrokes.length){ spFeedback('Write the word first ✍️'); sayUI('writeit'); return; }
-  spFeedback('Reading your writing… 🔎');
-  sayUI('reading');
+  spChecking=true;
+  spFeedback('Checking your writing… 🔎');
+  let cands;
   try{
-    const cands = await recognizeHandwriting(spStrokes, spcanvas.clientWidth, spcanvas.clientHeight);
-    const target = spItem.w.toLowerCase();
-    const got = cands.slice(0,10).map(c=>String(c).toLowerCase().replace(/[^a-z]/g,''));
-    const correct = got.includes(target);
-    if(correct){
-      spFeedback('🎉 Yes! You wrote <span class="reveal" style="font-size:1.2em;font-weight:900">'+wordHTML(spItem)+'</span> correctly!');
-      playSeq([{kind:'ui',name:'correctwriting',text:'Yes! You wrote it correctly!',rate:UI_RATE}]);
-      confetti();
-    }else{
-      const read = cands[0] ? cands[0] : '—';
-      spFeedback('I read “<b>'+read+'</b>”. The word is <span class="reveal" style="font-size:1.15em;font-weight:900">'+wordHTML(spItem)+'</span> — try again! ✍️');
-      playSeq([{kind:'ui',name:'almost',text:'Almost! The word is',rate:UI_RATE},
-               {kind:'words',name:target,text:spItem.w,rate:WORD_RATE}]);
-    }
+    cands = await recognizeHandwriting(spStrokes, spcanvas.clientWidth, spcanvas.clientHeight);
   }catch(e){
-    spFeedback('I could not read it automatically 😅 — press <b>👀 Show word</b> to check together.');
+    spChecking=false;
+    spFeedback('Hmm, I could not read it. Try again ✍️');   // network error: do not consume a try
     sayUI('couldnt');
+    return;
+  }
+  spChecking=false;
+  const target=spItem.w.toLowerCase();
+  const got=cands.slice(0,12).map(c=>String(c).toLowerCase().replace(/[^a-z]/g,''));
+  const correct=got.includes(target);
+  if(correct){
+    spScore++; spTotal++;
+    spFeedback('🎉 Yes! '+wordBig(spItem));
+    playSeq([{kind:'ui',name:'yes',text:'Yes!',rate:UI_RATE},
+             {kind:'words',name:target,text:spItem.w,rate:WORD_RATE},
+             {kind:'ui',name:'greatjob',text:'Great job!',rate:UI_RATE}]);
+    confetti(); updateSpScore();
+    setTimeout(advanceSpell, 1700);
+  }else if(spAttempt===1){
+    spAttempt=2;
+    drawSpGuide(); resetInk();                    // clear + one more try, WITHOUT showing the word
+    spFeedback('Not quite — let’s clean and try again! ✍️');
+    playSeq([{kind:'ui',name:'tryagain',text:'Not quite. Clean and try again!',rate:UI_RATE}]);
+    setTimeout(()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); }, 1500);
+  }else{
+    spTotal++;                                    // second miss → count wrong and move on (word stays hidden)
+    spFeedback('Good try! Here is the next word ➡️');
+    playSeq([{kind:'ui',name:'goodtry',text:'Good try! Here is the next word.',rate:UI_RATE}]);
+    updateSpScore();
+    setTimeout(advanceSpell, 1700);
   }
 }
-
-/* ---- A) Writing journal (persists in the browser) ---- */
-let journal = [];
-try{ journal = JSON.parse(localStorage.getItem('writingJournal')||'[]'); }catch(e){ journal=[]; }
-function saveJournal(){ try{ localStorage.setItem('writingJournal', JSON.stringify(journal)); }
-  catch(e){ journal=journal.slice(-20); try{ localStorage.setItem('writingJournal', JSON.stringify(journal)); }catch(_){} } }
-function thumbOf(){
-  // shrink the canvas to a small JPEG to keep storage tiny
-  const tw=260, th=Math.round(tw*spcanvas.clientHeight/spcanvas.clientWidth);
-  const c=document.createElement('canvas'); c.width=tw; c.height=th;
-  const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,tw,th);
-  x.drawImage(spcanvas,0,0,tw,th);
-  return c.toDataURL('image/jpeg',0.7);
+function advanceSpell(){ if(spTotal>=ROUNDS) showSpellResult(); else nextSpell(); }
+function showSpellResult(){
+  ['spemoji','sphear','spbox','spbuttons','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='none');
+  const pct=Math.round(spScore/ROUNDS*100);
+  document.getElementById('spresult').innerHTML =
+    starHTML('sp', pct)+'<div class="resultmsg">You wrote <b>'+spScore+' / '+ROUNDS+'</b> correctly!<br>'+praiseFor(pct)+'</div>';
+  document.getElementById('spresult').style.display='block';
+  document.getElementById('spstart').style.display='inline-flex';
+  playSeq([{kind:'ui',name:'finished',text:'You finished! Look at your star!',rate:UI_RATE}]);
+  confetti();
 }
-function addToJournal(){
-  if(!spItem){ return; }
-  if(!spStrokes.length || !spcanvas.width || !spcanvas.height){ spFeedback('Write the word first ✍️'); sayUI('writeit'); return; }
-  journal.push({ w:spItem.w, d:spItem.d, img:thumbOf(), status:'todo', id:Date.now()+'-'+Math.round(performance.now()) });
-  if(journal.length>40) journal=journal.slice(-40);
-  saveJournal(); renderJournal();
-  spFeedback('💾 Saved to <b>My Writing</b> below!');
-  sayUI('saved');
-}
-function setStatus(id, st){
-  const it=journal.find(j=>j.id===id); if(!it) return;
-  it.status = (it.status===st)?'todo':st;   // tap again to clear
-  saveJournal(); renderJournal();
-}
-function clearJournal(){ journal=[]; saveJournal(); renderJournal(); }
-function renderJournal(){
-  const wrap=document.getElementById('journalwrap');
-  const el=document.getElementById('journal');
-  if(!journal.length){ wrap.style.display='none'; el.innerHTML=''; return; }
-  wrap.style.display='block';
-  el.innerHTML = journal.slice().reverse().map(j=>{
-    const cls = j.status==='ok'?'ok':(j.status==='redo'?'redo':'');
-    const label = j.status==='ok'?'✓ Great!':(j.status==='redo'?'✏️ Practice again':'');
-    const re=new RegExp('('+j.d+')','i');
-    const wh=j.w.replace(re,'<b style="color:var(--'+j.d+')">$1</b>');
-    return '<div class="jcard '+cls+'">'+
-      '<img src="'+j.img+'" alt="writing">'+
-      '<div class="jword">'+wh+'</div>'+
-      '<div class="jstat">'+label+'</div>'+
-      '<div class="jbtns">'+
-        '<button title="Great" onclick="setStatus(\''+j.id+'\',\'ok\')">✅</button>'+
-        '<button title="Practice again" onclick="setStatus(\''+j.id+'\',\'redo\')">✏️</button>'+
-        '<button title="Hear word" onclick="sayWord(\''+j.w+'\')">🔊</button>'+
-      '</div></div>';
-  }).join('');
+function updateSpScore(){
+  const s=document.getElementById('spscore');
+  if(s) s.innerHTML = '✅ '+spScore+' correct · '+spTotal+' / '+ROUNDS+' done';
 }
 function updateScore(){
   const s=document.getElementById('qscore');
-  const stars='⭐'.repeat(Math.min(5,qScore));
-  s.innerHTML = qTotal? `Score: ${qScore} / ${qTotal}<br><span class="stars">${stars||'✨'}</span>` : '';
+  s.innerHTML = qTotal ? ('✅ '+qScore+' correct · '+qTotal+' / '+ROUNDS+' done') : '';
 }
 function confetti(){
   const em=['🎉','⭐','🎈','✨','🌟','🥳'];
@@ -870,7 +876,6 @@ document.getElementById('tracesound').onclick=()=>sayDigraph(traceLetters);
 /* ============ Init ============ */
 initNetToggle();
 updateVoiceUI();
-renderJournal();
 selectTab('sh');
 sizeCanvas();
 // iOS needs a user gesture to unlock audio; first tap anywhere primes it
