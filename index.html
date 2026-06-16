@@ -125,6 +125,16 @@
   .choice.right{animation:correct .6s ease;} .choice.wrong{animation:shake .4s ease; opacity:.5;}
   @keyframes correct{0%,100%{transform:scale(1);}40%{transform:scale(1.25);}}
   @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+  /* listening-game word choices (image + written word) */
+  .qchoices{display:flex; flex-wrap:wrap; justify-content:center; gap:16px; margin-top:8px;}
+  .qchoice{background:#fff; border:5px solid #f1eef9; border-radius:24px; padding:14px 10px 12px; width:clamp(120px,28vw,180px); cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.07); transition:transform .1s ease; font-family:inherit;}
+  .qchoice:active{transform:translateY(5px) scale(.97);}
+  .qchoice .emoji{font-size:clamp(50px,10vw,78px); line-height:1; display:block;}
+  .qchoice .label{font-size:clamp(24px,4vw,32px); font-weight:900; margin-top:6px; letter-spacing:.5px; color:var(--ink);}
+  .qchoice.right{border-color:var(--th); animation:correct .6s ease;}
+  .qchoice.wrong{border-color:#ff5a72; animation:shake .4s ease; opacity:.6;}
+  .qchoice.reveal-correct{border-color:var(--th); box-shadow:0 8px 0 rgba(55,200,168,.25);}
+
   .score{font-size:clamp(18px,2.6vw,24px); font-weight:bold; margin-top:16px;}
   .stars{font-size:28px; letter-spacing:4px;}
 
@@ -230,14 +240,14 @@
 
   <!-- Quiz -->
   <section class="quiz" id="quiz">
-    <h2>🌟 Listening Game</h2>
+    <h2>🌟 Listening Game · <span id="quizTag" style="color:var(--sh)">SH</span></h2>
     <div class="sectionhead" style="margin-top:6px">
       <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('quizhow')"><span class="ic">🔊</span> How to play</button>
     </div>
-    <div class="quizemoji" id="qemoji">🎯</div>
+    <div class="quizemoji" id="qemoji">👂</div>
     <div class="quizq" id="qword">Press START to play!</div>
-    <button class="speak" id="qreplay" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 6px"><span class="ic">🔊</span> Hear it again</button>
-    <div class="choices" id="qchoices"></div>
+    <button class="speak" id="qreplay" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the word</button>
+    <div class="qchoices" id="qchoices"></div>
     <button class="speak big" id="qnext" style="display:none" onclick="nextQuestion()"><span class="ic">➡️</span> Next word</button>
     <div class="score" id="qscore"></div>
     <button class="speak big" id="qstart" onclick="startQuiz()"><span class="ic">▶️</span> START</button>
@@ -471,6 +481,12 @@ function selectTab(d){
   currentDigraph=d;
   if(typeof drawGuide==='function') drawGuide();
   if(typeof updateSpellTag==='function') updateSpellTag();
+  if(typeof updateQuizTag==='function') updateQuizTag();
+  // if the writing game is running, switch it to the new digraph (no audio)
+  const sb=document.getElementById('spbox');
+  if(sb && sb.style.display!=='none' && typeof nextSpell==='function') nextSpell(true);
+  // if the listening game is running, switch it to the new digraph (no audio)
+  if(typeof quizStarted!=='undefined' && quizStarted && typeof nextQuestion==='function') nextQuestion(true);
   // Video 2 follows the selected digraph (Video 1 stays general)
   const v2=document.getElementById('vid2frame');
   if(v2 && DIGRAPHS[d].video){
@@ -478,9 +494,6 @@ function selectTab(d){
     if(v2.getAttribute('src')!==want) v2.setAttribute('src', want);   // only reload when it actually changes
     const t=document.getElementById('vid2title'); if(t) t.textContent='Video 2 · '+d.toUpperCase()+' 🎵';
   }
-  // if the writing game is already running, switch it to the new digraph's words
-  const sb=document.getElementById('spbox');
-  if(sb && sb.style.display!=='none' && typeof nextSpell==='function') nextSpell();
   const data = DIGRAPHS[d];
   const up = d.toUpperCase();
   let words = data.words.map(o=>{
@@ -531,61 +544,53 @@ async function readAll(d){
   }
 }
 
-/* ============ Quiz ============ */
-let qScore=0, qTotal=0, qAnswer=null, qPool=[], qItem=null, qAnswered=false, qTimer=null;
-function buildPool(){
-  qPool=[];
-  ORDER.forEach(d=> DIGRAPHS[d].words.forEach(o=> qPool.push({...o,d})));
-}
+/* ============ Quiz: listen → tap the right word (current digraph only) ============ */
+let qScore=0, qTotal=0, qAnswer=null, qItem=null, qAnswered=false, qTimer=null, quizStarted=false;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-
+function updateQuizTag(){
+  const t=document.getElementById('quizTag');
+  if(t){ t.textContent=currentDigraph.toUpperCase(); t.style.color='var(--'+currentDigraph+')'; }
+}
 function startQuiz(){
-  buildPool(); qScore=0; qTotal=0;
+  quizStarted=true; qScore=0; qTotal=0;
   document.getElementById('qstart').innerHTML='<span class="ic">🔄</span> Play again';
   nextQuestion();
 }
-function nextQuestion(){
+function nextQuestion(silent){
   qAnswered=false;
-  qItem = qPool[Math.floor(Math.random()*qPool.length)];
-  qAnswer=qItem.d;
-  document.getElementById('qemoji').textContent=qItem.e;
-  document.getElementById('qword').textContent='Listen carefully… 👂';
+  const pool=DIGRAPHS[currentDigraph].words;
+  const target=pool[Math.floor(Math.random()*pool.length)];
+  qItem={...target, d:currentDigraph}; qAnswer=target.w;
+  document.getElementById('qword').textContent='Listen and tap the word 👂';
   document.getElementById('qreplay').style.display='inline-flex';
   document.getElementById('qnext').style.display='none';
-  // gentle intro, then say the word 3 times spaced out
-  sayUI('listen');
-  qTimer=setTimeout(()=>speakRepeat(qItem.w, 3, 1050), 1100);
-  // choices: correct + 2 random others
-  let opts=new Set([qItem.d]);
-  while(opts.size<3){ opts.add(ORDER[Math.floor(Math.random()*ORDER.length)]); }
-  const arr=shuffle([...opts]);
-  const ch=document.getElementById('qchoices');
-  ch.innerHTML='';
-  arr.forEach(d=>{
+  // three word options, all from the SAME digraph
+  const others=shuffle(pool.filter(o=>o.w!==target.w)).slice(0,2);
+  const opts=shuffle([target, ...others]);
+  const re=new RegExp('('+currentDigraph+')','i');
+  const ch=document.getElementById('qchoices'); ch.innerHTML='';
+  opts.forEach(o=>{
     const b=document.createElement('button');
-    b.className='choice'; b.style.background='var(--'+d+')';
-    b.textContent=d.toUpperCase();
-    b.onclick=()=>answer(b,d);
+    b.className='qchoice'; b.dataset.w=o.w;
+    const wh=o.w.replace(re,'<b style="color:var(--'+currentDigraph+')">$1</b>');
+    b.innerHTML='<span class="emoji">'+o.e+'</span><span class="label">'+wh+'</span>';
+    b.onclick=()=>answer(b,o.w);
     ch.appendChild(b);
   });
   updateScore();
+  if(qTimer){ clearTimeout(qTimer); qTimer=null; }
+  if(!silent){
+    sayUI('listen');
+    qTimer=setTimeout(()=>speakRepeat(target.w, 3, 1050), 1000);
+  }
 }
-// Show the word in writing, with the digraph highlighted in its color.
-function revealWord(item){
-  const re=new RegExp('('+item.d+')','i');
-  const html=item.w.replace(re,'<b style="color:var(--'+item.d+')">$1</b>');
-  document.getElementById('qword').innerHTML =
-    '<span style="font-size:clamp(34px,6vw,54px);font-weight:900;letter-spacing:1px">'+html+'</span>';
-}
-function answer(btn,d){
+function answer(btn,w){
   if(qAnswered) return;          // one answer per question
   qAnswered=true; qTotal++;
   if(qTimer){ clearTimeout(qTimer); qTimer=null; }
   stopAll();
-  // lock all choices
-  document.querySelectorAll('#qchoices .choice').forEach(b=>b.style.pointerEvents='none');
-  revealWord(qItem);             // always show the written word at the end
-  if(d===qAnswer){
+  document.querySelectorAll('#qchoices .qchoice').forEach(b=>b.style.pointerEvents='none');
+  if(w===qAnswer){
     btn.classList.add('right'); qScore++;
     playSeq([{kind:'ui',name:'yes',text:'Yes!',rate:UI_RATE},
              {kind:'words',name:qItem.w.toLowerCase(),text:qItem.w,rate:WORD_RATE},
@@ -593,6 +598,7 @@ function answer(btn,d){
     confetti();
   }else{
     btn.classList.add('wrong');
+    document.querySelectorAll('#qchoices .qchoice').forEach(b=>{ if(b.dataset.w===qAnswer) b.classList.add('reveal-correct'); });
     playSeq([{kind:'ui',name:'almost',text:'Almost! The word is',rate:UI_RATE},
              {kind:'words',name:qItem.w.toLowerCase(),text:qItem.w,rate:WORD_RATE}]);
   }
@@ -662,7 +668,6 @@ spcanvas.addEventListener('pointercancel',spEnd);
 spcanvas.addEventListener('pointerleave',spEnd);
 
 function startSpell(){
-  buildPool();
   document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
   document.getElementById('spbox').style.display='block';
   document.getElementById('spbuttons').style.display='flex';
@@ -670,13 +675,13 @@ function startSpell(){
   sizeSpCanvas();
   nextSpell();
 }
-function nextSpell(){
+function nextSpell(silent){
   const pool=spellWords();
   spItem=pool[Math.floor(Math.random()*pool.length)];
   document.getElementById('spemoji').textContent=spItem.e;
   document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
   drawSpGuide(); resetInk();
-  speakRepeat(spItem.w, 2, 950);
+  if(!silent) speakRepeat(spItem.w, 2, 950);
 }
 function showSpell(){
   if(!spItem) return;
