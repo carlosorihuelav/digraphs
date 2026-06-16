@@ -199,12 +199,12 @@
     </div>
     <div class="videogrid">
       <div class="vid">
-        <h3>Video 1 🎵</h3>
+        <h3>Video 1 · All digraphs 🎵</h3>
         <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/JajpqcODbCE?rel=0" title="Digraphs video 1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
       </div>
       <div class="vid">
-        <h3>Video 2 🎵</h3>
-        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/TBA-R3Sx1Pc?rel=0" title="Digraphs video 2" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <h3 id="vid2title">Video 2 · SH 🎵</h3>
+        <div class="vidframe"><iframe id="vid2frame" src="https://www.youtube-nocookie.com/embed/eqigJZm5aa4?rel=0" title="Digraph video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
       </div>
     </div>
   </section>
@@ -277,35 +277,35 @@
 <script>
 /* ============ Data ============ */
 const DIGRAPHS = {
-  sh:{ color:'var(--sh)', sound:'“shh”, like a quiet sound', say:'The letters S and H make the sound at the beginning of ship. Listen. Ship. Sheep. Fish.',
+  sh:{ color:'var(--sh)', video:'eqigJZm5aa4', sound:'“shh”, like a quiet sound', say:'The letters S and H make the sound at the beginning of ship. Listen. Ship. Sheep. Fish.',
        words:[
          {w:'ship',e:'🚢'},{w:'shark',e:'🦈'},{w:'shell',e:'🐚'},
          {w:'sheep',e:'🐑'},{w:'shoe',e:'👟'},{w:'fish',e:'🐟'},
          {w:'shirt',e:'👕'},{w:'brush',e:'🪥'},{w:'shop',e:'🛍️'},
          {w:'shower',e:'🚿'},{w:'wash',e:'🧼'},{w:'dish',e:'🍽️'}
        ]},
-  ch:{ color:'var(--ch)', sound:'“ch”, like a little train', say:'The letters C and H make the sound at the beginning of chair. Listen. Chair. Cheese. Cherry.',
+  ch:{ color:'var(--ch)', video:'8JmCrl4FHj8', sound:'“ch”, like a little train', say:'The letters C and H make the sound at the beginning of chair. Listen. Chair. Cheese. Cherry.',
        words:[
          {w:'chair',e:'🪑'},{w:'cheese',e:'🧀'},{w:'cherry',e:'🍒'},
          {w:'chicken',e:'🐔'},{w:'chocolate',e:'🍫'},{w:'church',e:'⛪'},
          {w:'lunch',e:'🍱'},{w:'beach',e:'🏖️'},{w:'chips',e:'🍟'},
          {w:'watch',e:'⌚'},{w:'peach',e:'🍑'},{w:'teacher',e:'🧑‍🏫'}
        ]},
-  th:{ color:'var(--th)', sound:'“th”, put your tongue between your teeth', say:'The letters T and H make the sound at the beginning of thumb. Put your tongue between your teeth. Listen. Thumb. Three. Bath.',
+  th:{ color:'var(--th)', video:'V-cvlZLNEBM', sound:'“th”, put your tongue between your teeth', say:'The letters T and H make the sound at the beginning of thumb. Put your tongue between your teeth. Listen. Thumb. Three. Bath.',
        words:[
          {w:'thumb',e:'👍'},{w:'three',e:'3️⃣'},{w:'teeth',e:'🦷'},
          {w:'bath',e:'🛁'},{w:'feather',e:'🪶'},{w:'mouth',e:'👄'},
          {w:'thunder',e:'⛈️'},{w:'moth',e:'🦋'},{w:'math',e:'➗'},
          {w:'think',e:'🤔'},{w:'north',e:'🧭'},{w:'cloth',e:'🧣'}
        ]},
-  wh:{ color:'var(--wh)', sound:'“wh”, blow a little air', say:'The letters W and H make the sound at the beginning of whale. Listen. Whale. Wheel. White.',
+  wh:{ color:'var(--wh)', video:'TBA-R3Sx1Pc', sound:'“wh”, blow a little air', say:'The letters W and H make the sound at the beginning of whale. Listen. Whale. Wheel. White.',
        words:[
          {w:'whale',e:'🐳'},{w:'wheel',e:'☸️'},{w:'white',e:'🤍'},
          {w:'wheat',e:'🌾'},{w:'whistle',e:'😗'},{w:'whisk',e:'🥄'},
          {w:'what',e:'❓'},{w:'wheelchair',e:'🦽'},{w:'whisper',e:'🤫'},
          {w:'why',e:'🤷'},{w:'whiskers',e:'🐱'},{w:'where',e:'📍'}
        ]},
-  ph:{ color:'var(--ph)', sound:'“ph” says “f”!', say:'The letters P and H make the F sound. Listen. Phone. Photo. Elephant.',
+  ph:{ color:'var(--ph)', video:'9zzq9wy6wXI', sound:'“ph” says “f”!', say:'The letters P and H make the F sound. Listen. Phone. Photo. Elephant.',
        words:[
          {w:'phone',e:'📱'},{w:'photo',e:'📷'},{w:'elephant',e:'🐘'},
          {w:'dolphin',e:'🐬'},{w:'graph',e:'📈'},{w:'alphabet',e:'🔤'},
@@ -471,6 +471,13 @@ function selectTab(d){
   currentDigraph=d;
   if(typeof drawGuide==='function') drawGuide();
   if(typeof updateSpellTag==='function') updateSpellTag();
+  // Video 2 follows the selected digraph (Video 1 stays general)
+  const v2=document.getElementById('vid2frame');
+  if(v2 && DIGRAPHS[d].video){
+    const want='https://www.youtube-nocookie.com/embed/'+DIGRAPHS[d].video+'?rel=0';
+    if(v2.getAttribute('src')!==want) v2.setAttribute('src', want);   // only reload when it actually changes
+    const t=document.getElementById('vid2title'); if(t) t.textContent='Video 2 · '+d.toUpperCase()+' 🎵';
+  }
   // if the writing game is already running, switch it to the new digraph's words
   const sb=document.getElementById('spbox');
   if(sb && sb.style.display!=='none' && typeof nextSpell==='function') nextSpell();
