@@ -227,20 +227,17 @@
   <section class="quiz" id="spell">
     <h2>✍️ Write the Words</h2>
     <div class="sectionhead" style="margin-top:6px">
-      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Look at the picture and listen to the word. Then type the word with the keyboard. Press Check to see if it is correct!')"><span class="ic">🔊</span> How to play</button>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Look at the picture and listen to the word. Write the word by hand with your finger or pencil. Then press Show word to check it!')"><span class="ic">🔊</span> How to play</button>
     </div>
     <div class="quizemoji" id="spemoji">✏️</div>
     <button class="speak" id="sphear" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the word</button>
-    <div>
-      <input id="spinput" type="text" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="type here…" style="display:none" />
-    </div>
+    <div class="tracebox" id="spbox" style="display:none"><canvas id="spcanvas"></canvas></div>
     <div class="spellfeedback" id="spfeedback"></div>
     <div class="choices" id="spbuttons" style="display:none">
-      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="checkSpell()"><span class="ic">✅</span> Check</button>
+      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="clearSpell()"><span class="ic">🧽</span> Clear</button>
       <button class="speak" style="padding:14px 22px;font-size:20px" onclick="showSpell()"><span class="ic">👀</span> Show word</button>
-      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="nextSpell()"><span class="ic">➡️</span> Next</button>
+      <button class="speak" style="padding:14px 22px;font-size:20px" onclick="nextSpell()"><span class="ic">➡️</span> Next word</button>
     </div>
-    <div class="score" id="spscore"></div>
     <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
   </section>
 
@@ -505,66 +502,77 @@ function answer(btn,d){
 }
 document.getElementById('qreplay').onclick=()=>{ if(qItem) speakRepeat(qItem.w, 3, 950); };
 
-/* ============ Spelling ============ */
-let spItem=null, spDone=false, spScore=0, spTotal=0;
+/* ============ Spelling (handwriting) ============ */
+let spItem=null;
+const spcanvas=document.getElementById('spcanvas');
+const spctx=spcanvas.getContext('2d');
+let spDrawing=false;
+
+function sizeSpCanvas(){
+  const box=document.getElementById('spbox');
+  if(box.style.display==='none') return;
+  const w=box.clientWidth, h=Math.round(w*0.42);
+  const dpr=window.devicePixelRatio||1;
+  spcanvas.width=w*dpr; spcanvas.height=h*dpr;
+  spcanvas.style.height=h+'px';
+  spctx.setTransform(dpr,0,0,dpr,0,0);
+  drawSpGuide();
+}
+function drawSpGuide(){
+  const w=spcanvas.clientWidth, h=spcanvas.clientHeight;
+  spctx.clearRect(0,0,w,h);
+  // handwriting lines: top, dashed middle, baseline
+  spctx.save();
+  spctx.strokeStyle='#ece8f7'; spctx.lineWidth=2;
+  spctx.beginPath(); spctx.moveTo(0,h*0.28); spctx.lineTo(w,h*0.28); spctx.stroke();
+  spctx.beginPath(); spctx.moveTo(0,h*0.82); spctx.lineTo(w,h*0.82); spctx.stroke();
+  spctx.strokeStyle='#ddd6f3'; spctx.setLineDash([8,10]);
+  spctx.beginPath(); spctx.moveTo(0,h*0.55); spctx.lineTo(w,h*0.55); spctx.stroke();
+  spctx.restore();
+}
+function clearSpell(){ drawSpGuide(); }
+function spPos(e){ const r=spcanvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+function spStart(e){ spDrawing=true; const p=spPos(e); spctx.beginPath(); spctx.moveTo(p.x,p.y); e.preventDefault(); }
+function spMove(e){
+  if(!spDrawing) return;
+  const p=spPos(e);
+  spctx.strokeStyle=(spItem&&COLORHEX[spItem.d])||'#5b8def';
+  spctx.lineWidth=12; spctx.lineCap='round'; spctx.lineJoin='round';
+  spctx.lineTo(p.x,p.y); spctx.stroke(); spctx.beginPath(); spctx.moveTo(p.x,p.y);
+  e.preventDefault();
+}
+function spEnd(){ spDrawing=false; }
+spcanvas.addEventListener('pointerdown',spStart);
+spcanvas.addEventListener('pointermove',spMove);
+spcanvas.addEventListener('pointerup',spEnd);
+spcanvas.addEventListener('pointercancel',spEnd);
+spcanvas.addEventListener('pointerleave',spEnd);
+
 function startSpell(){
-  buildPool(); spScore=0; spTotal=0;
+  buildPool();
   document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
-  document.getElementById('spinput').style.display='block';
+  document.getElementById('spbox').style.display='block';
   document.getElementById('spbuttons').style.display='flex';
   document.getElementById('sphear').style.display='inline-flex';
+  sizeSpCanvas();
   nextSpell();
 }
 function nextSpell(){
-  spDone=false;
   spItem=qPool[Math.floor(Math.random()*qPool.length)];
   document.getElementById('spemoji').textContent=spItem.e;
-  const inp=document.getElementById('spinput');
-  inp.value=''; inp.className=''; inp.disabled=false;
-  document.getElementById('spfeedback').innerHTML='Type the word you hear 👂';
+  document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
+  drawSpGuide();
   speakRepeat(spItem.w, 2, 950);
-  setTimeout(()=>inp.focus(), 50);
-  updateSpScore();
-}
-function checkSpell(){
-  if(!spItem || spDone) return;
-  const inp=document.getElementById('spinput');
-  const guess=inp.value.trim().toLowerCase().replace(/\s+/g,'');
-  if(!guess){ say('Type the word first.'); return; }
-  spTotal++;
-  if(guess===spItem.w.toLowerCase()){
-    spDone=true; spScore++;
-    inp.classList.remove('no'); inp.classList.add('ok'); inp.disabled=true;
-    revealSpell('🎉 Yes! You spelled it!');
-    say('Yes! '+spItem.w+'. You spelled it. Great job!',0.85);
-    confetti();
-  }else{
-    inp.classList.remove('no'); void inp.offsetWidth; inp.classList.add('no');
-    document.getElementById('spfeedback').innerHTML='Not yet — listen again and try! 👂';
-    say('Not yet. Listen again.',0.85);
-    speakRepeat(spItem.w, 2, 950);
-  }
-  updateSpScore();
 }
 function showSpell(){
   if(!spItem) return;
-  spDone=true;
-  document.getElementById('spinput').disabled=true;
-  revealSpell('The word is:');
-  say('The word is '+spItem.w,0.85);
-}
-function revealSpell(msg){
   const re=new RegExp('('+spItem.d+')','i');
   const html=spItem.w.replace(re,'<b style="color:var(--'+spItem.d+')">$1</b>');
   document.getElementById('spfeedback').innerHTML =
-    msg+' <span class="reveal" style="font-size:1.25em;font-weight:900">'+html+'</span>';
-}
-function updateSpScore(){
-  const s=document.getElementById('spscore');
-  s.innerHTML = spTotal? `Words: ${spScore} / ${spTotal} ⭐` : '';
+    'The word is: <span class="reveal" style="font-size:1.3em;font-weight:900">'+html+'</span>';
+  say('The word is '+spItem.w+'. Check your writing!',0.85);
 }
 document.getElementById('sphear').onclick=()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); };
-document.getElementById('spinput').addEventListener('keydown',e=>{ if(e.key==='Enter') checkSpell(); });
 function updateScore(){
   const s=document.getElementById('qscore');
   const stars='⭐'.repeat(Math.min(5,qScore));
@@ -637,7 +645,7 @@ tcanvas.addEventListener('pointermove',moveDraw);
 tcanvas.addEventListener('pointerup',endDraw);
 tcanvas.addEventListener('pointercancel',endDraw);
 tcanvas.addEventListener('pointerleave',endDraw);
-window.addEventListener('resize',sizeCanvas);
+window.addEventListener('resize',()=>{ sizeCanvas(); sizeSpCanvas(); });
 document.getElementById('tracesound').onclick=()=>say(DIGRAPHS[traceLetters].say);
 
 /* ============ Init ============ */
