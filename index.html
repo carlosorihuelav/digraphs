@@ -191,6 +191,24 @@
     </div>
   </header>
 
+  <!-- Videos (reference videos from the teachers, at the top) -->
+  <section class="videos" style="margin-top:24px">
+    <div class="sectionhead">
+      <h2>🎬 Watch &amp; Learn</h2>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('videos')"><span class="ic">🔊</span> Listen</button>
+    </div>
+    <div class="videogrid">
+      <div class="vid">
+        <h3>Video 1 🎵</h3>
+        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/JajpqcODbCE?rel=0" title="Digraphs video 1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+      </div>
+      <div class="vid">
+        <h3>Video 2 🎵</h3>
+        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/TBA-R3Sx1Pc?rel=0" title="Digraphs video 2" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Tabs -->
   <nav class="tabs" id="tabs"></nav>
 
@@ -207,24 +225,6 @@
     <div class="tracetools">
       <button class="speak" style="padding:12px 20px;font-size:18px" onclick="clearTrace()"><span class="ic">🧽</span> Clear</button>
       <button class="speak" style="padding:12px 20px;font-size:18px" id="tracesound"><span class="ic">🔊</span> Say the sound</button>
-    </div>
-  </section>
-
-  <!-- Videos -->
-  <section class="videos">
-    <div class="sectionhead">
-      <h2>🎬 Watch &amp; Learn</h2>
-      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('videos')"><span class="ic">🔊</span> Listen</button>
-    </div>
-    <div class="videogrid">
-      <div class="vid">
-        <h3>Video 1 🎵</h3>
-        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/JajpqcODbCE?rel=0" title="Digraphs video 1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
-      </div>
-      <div class="vid">
-        <h3>Video 2 🎵</h3>
-        <div class="vidframe"><iframe src="https://www.youtube-nocookie.com/embed/TBA-R3Sx1Pc?rel=0" title="Digraphs video 2" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
-      </div>
     </div>
   </section>
 
@@ -245,7 +245,7 @@
 
   <!-- Spelling -->
   <section class="quiz" id="spell">
-    <h2>✍️ Write the Words</h2>
+    <h2>✍️ Write the <span id="spellTag" style="color:var(--sh)">SH</span> Words</h2>
     <div class="sectionhead" style="margin-top:6px">
       <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('spellhow')"><span class="ic">🔊</span> How to play</button>
     </div>
@@ -468,7 +468,12 @@ const lessonEl = document.getElementById('lesson');
 function selectTab(d){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.d===d));
   traceLetters=d;
+  currentDigraph=d;
   if(typeof drawGuide==='function') drawGuide();
+  if(typeof updateSpellTag==='function') updateSpellTag();
+  // if the writing game is already running, switch it to the new digraph's words
+  const sb=document.getElementById('spbox');
+  if(sb && sb.style.display!=='none' && typeof nextSpell==='function') nextSpell();
   const data = DIGRAPHS[d];
   const up = d.toUpperCase();
   let words = data.words.map(o=>{
@@ -591,6 +596,12 @@ document.getElementById('qreplay').onclick=()=>{ if(qItem) speakRepeat(qItem.w, 
 
 /* ============ Spelling (handwriting) ============ */
 let spItem=null;
+let currentDigraph='sh';                 // set by the active tab; spelling uses only this digraph's words
+function spellWords(){ return DIGRAPHS[currentDigraph].words.map(o=>({...o, d:currentDigraph})); }
+function updateSpellTag(){
+  const t=document.getElementById('spellTag');
+  if(t){ t.textContent=currentDigraph.toUpperCase(); t.style.color='var(--'+currentDigraph+')'; }
+}
 const spcanvas=document.getElementById('spcanvas');
 const spctx=spcanvas.getContext('2d');
 let spDrawing=false;
@@ -653,7 +664,8 @@ function startSpell(){
   nextSpell();
 }
 function nextSpell(){
-  spItem=qPool[Math.floor(Math.random()*qPool.length)];
+  const pool=spellWords();
+  spItem=pool[Math.floor(Math.random()*pool.length)];
   document.getElementById('spemoji').textContent=spItem.e;
   document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
   drawSpGuide(); resetInk();
