@@ -149,6 +149,9 @@
   .spellfeedback{font-size:clamp(20px,3.2vw,30px); font-weight:900; min-height:1.4em; margin:10px 0 4px;}
   .spellfeedback .reveal b{letter-spacing:1px;}
 
+  /* wide writing area for "Write the Words" */
+  #spbox{ max-width:none; width:100%; }
+
   /* ---------- Writing journal ---------- */
   .journal{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-top:14px;}
   .jcard{background:#fff; border-radius:18px; padding:8px; box-shadow:0 6px 0 rgba(0,0,0,.06); border:5px solid #ece8f7;}
@@ -595,7 +598,7 @@ let spDrawing=false;
 function sizeSpCanvas(){
   const box=document.getElementById('spbox');
   if(box.style.display==='none') return;
-  const w=box.clientWidth, h=Math.round(w*0.42);
+  const w=box.clientWidth, h=Math.max(180, Math.min(Math.round(w*0.32), 360));
   const dpr=window.devicePixelRatio||1;
   spcanvas.width=w*dpr; spcanvas.height=h*dpr;
   spcanvas.style.height=h+'px';
