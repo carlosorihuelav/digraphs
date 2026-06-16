@@ -162,7 +162,7 @@
   <header>
     <h1>🎈 Digraph Friends! 🎈</h1>
     <p class="sub">Two letters, one special sound</p>
-    <button class="speak big" onclick="say('Welcome! Today we learn digraphs. A digraph is two letters that make one sound. Tap a colored button to start, then tap the words to hear them. Have fun!')">
+    <button class="speak big" onclick="sayUI('welcome')">
       <span class="ic">🔊</span> Listen to instructions
     </button>
     <div class="voicebar">
@@ -186,7 +186,7 @@
   <section class="trace" id="trace">
     <div class="sectionhead">
       <h2>✏️ Trace the Letters</h2>
-      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Use your finger or pencil to trace the letters. Follow the gray shape. Say the sound while you write!')"><span class="ic">🔊</span> Listen</button>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('tracehow')"><span class="ic">🔊</span> Listen</button>
     </div>
     <div class="tracebox"><canvas id="tcanvas"></canvas></div>
     <div class="tracetools">
@@ -199,7 +199,7 @@
   <section class="videos">
     <div class="sectionhead">
       <h2>🎬 Watch &amp; Learn</h2>
-      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Watch these two videos to hear all the digraph sounds. Sing along!')"><span class="ic">🔊</span> Listen</button>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('videos')"><span class="ic">🔊</span> Listen</button>
     </div>
     <div class="videogrid">
       <div class="vid">
@@ -217,7 +217,7 @@
   <section class="quiz" id="quiz">
     <h2>🌟 Listening Game</h2>
     <div class="sectionhead" style="margin-top:6px">
-      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Listen to the word and look at the picture. Which two letters make the sound? Tap the right answer!')"><span class="ic">🔊</span> How to play</button>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('quizhow')"><span class="ic">🔊</span> How to play</button>
     </div>
     <div class="quizemoji" id="qemoji">🎯</div>
     <div class="quizq" id="qword">Press START to play!</div>
@@ -232,7 +232,7 @@
   <section class="quiz" id="spell">
     <h2>✍️ Write the Words</h2>
     <div class="sectionhead" style="margin-top:6px">
-      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="say('Look at the picture and listen to the word. Write the word by hand with your finger or pencil. Then press Show word to check it!')"><span class="ic">🔊</span> How to play</button>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('spellhow')"><span class="ic">🔊</span> How to play</button>
     </div>
     <div class="quizemoji" id="spemoji">✏️</div>
     <button class="speak" id="sphear" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the word</button>
@@ -346,86 +346,86 @@ if('speechSynthesis' in window){
   speechSynthesis.onvoiceschanged = ()=>refreshVoices();
 }
 
-/* ---- Natural ONLINE voice (works on iPad Safari too) + device fallback ---- */
-let preferNet = (localStorage.getItem('preferNet')!=='0');  // on by default
-let netOK = true;                 // becomes false if the online voice can't load
+/* ---- Natural voice from pre-recorded clips (same-origin → reliable on iPad) ---- */
+let preferNat = (localStorage.getItem('preferNat')!=='0');  // recorded natural voice, on by default
+let natOK = true;                 // becomes false only if a clip truly can't load
 let sessionId = 0;
-const uaudio = new Audio();       // no crossOrigin: plain media playback, no CORS needed
+const uaudio = new Audio();
+uaudio.preload='auto';
 const wait = ms => new Promise(r=>setTimeout(r,ms));
+const WORD_RATE = 0.82;           // slower & clearer for a new reader
+const UI_RATE   = 0.88;
 
 function stopAll(){
   try{ speechSynthesis.cancel(); }catch(e){}
   try{ uaudio.onended=null; uaudio.onerror=null; uaudio.pause(); }catch(e){}
 }
 function newSession(){ stopAll(); return ++sessionId; }
+function clipSrc(kind,name){ return 'audio/'+kind+'/'+name+'.mp3'; }
 
-function gttsURL(text){
-  const t = text.slice(0,190);
-  return 'https://translate.google.com/translate_tts?ie=UTF-8&q='+encodeURIComponent(t)+
-         '&tl=en&total=1&idx=0&textlen='+t.length+'&client=tw-ob';
-}
-function chunkText(text){            // keep each request under the online voice's length limit
-  const parts = text.match(/[^.!?]+[.!?]*/g) || [text];
-  const out=[]; let cur='';
-  parts.forEach(s=>{ if((cur+s).length>170){ if(cur.trim())out.push(cur.trim()); cur=s; } else cur+=s; });
-  if(cur.trim()) out.push(cur.trim());
-  return out;
-}
-function playNet(text, rate, id){
+function playClip(src, rate, id){
   return new Promise((res,rej)=>{
     if(id!==sessionId) return res();
-    uaudio.onended = ()=>res();
-    uaudio.onerror = ()=>rej(new Error('net-fail'));
-    uaudio.src = gttsURL(text);
-    uaudio.playbackRate = Math.max(0.6, Math.min(1.2, rate||1));
-    const p = uaudio.play();
-    if(p && p.catch) p.catch(()=>rej(new Error('play-block')));
+    uaudio.onended=()=>res();
+    uaudio.onerror=()=>rej(new Error('clip'));
+    uaudio.src=src;
+    uaudio.playbackRate=rate||1;
+    const p=uaudio.play();
+    if(p && p.catch) p.catch(()=>rej(new Error('block')));
   });
 }
 function synthSay(text, rate, id){
   return new Promise(res=>{
-    if(!('speechSynthesis'in window) || id!==sessionId) return res();
+    if(!('speechSynthesis'in window) || id!==sessionId || !text) return res();
     const u=new SpeechSynthesisUtterance(text);
-    u.lang = enVoice?enVoice.lang:'en-US'; u.rate=rate; u.pitch=1.0;
+    u.lang = enVoice?enVoice.lang:'en-US'; u.rate=rate*0.95; u.pitch=1.0;
     if(enVoice) u.voice=enVoice;
     u.onend=res; u.onerror=res;
     speechSynthesis.speak(u);
   });
 }
-async function utter(text, rate, id){
-  if(preferNet && netOK){
-    try{
-      for(const c of chunkText(text)){ if(id!==sessionId) return; await playNet(c, rate, id); }
-      return;
-    }catch(e){
-      netOK=false; updateVoiceUI();   // online voice blocked → use device voice from now on
-    }
-  }
-  await synthSay(text, rate, id);
-}
-async function say(text, rate=1){
+// Play a sequence of clips: {kind, name, text, rate}. Each falls back to the device voice if its clip fails.
+async function playSeq(items){
   const id=newSession();
-  await utter(text, rate, id);
+  for(const it of items){
+    if(id!==sessionId) return;
+    const rate = it.rate || WORD_RATE;
+    if(preferNat && natOK && it.name){
+      try{ await playClip(clipSrc(it.kind,it.name), rate, id); continue; }
+      catch(e){ if(e&&e.message==='clip'){ natOK=false; updateVoiceUI(); } }   // only disable on real load failure
+    }
+    await synthSay(it.text!=null?it.text:it.name, rate, id);
+  }
 }
+/* Public speech helpers */
+function sayWord(w){ return playSeq([{kind:'words', name:String(w).toLowerCase(), text:w, rate:WORD_RATE}]); }
+function sayDigraph(d){ return playSeq([{kind:'say', name:d, text:DIGRAPHS[d].say, rate:UI_RATE}]); }
+function sayUI(key, text){ return playSeq([{kind:'ui', name:key, text:text||'', rate:UI_RATE}]); }
+function say(text){ return synthSay(text, UI_RATE, newSession()); }  // generic fallback (rarely used)
 async function speakRepeat(word, times=3, gap=900){
   const id=newSession();
   for(let i=0;i<times;i++){
     if(id!==sessionId) return;
-    await utter(word, 0.78, id);          // slow & clear
+    if(preferNat && natOK){
+      try{ await playClip(clipSrc('words', String(word).toLowerCase()), WORD_RATE, id); }
+      catch(e){ if(e&&e.message==='clip'){ natOK=false; updateVoiceUI(); } await synthSay(word, WORD_RATE, id); }
+    } else {
+      await synthSay(word, WORD_RATE, id);
+    }
     if(i<times-1){ if(id!==sessionId) return; await wait(gap); }
   }
 }
 function updateVoiceUI(){
   const cb=document.getElementById('netVoice');
   const note=document.getElementById('voiceNote');
-  if(cb){ cb.checked = preferNet && netOK; cb.disabled = !netOK; }
-  if(note){ note.textContent = netOK ? '' : '(online voice unavailable — using device voice)'; }
+  if(cb){ cb.checked = preferNat && natOK; cb.disabled = !natOK; }
+  if(note){ note.textContent = natOK ? '' : '(natural voice unavailable — using device voice)'; }
 }
 function initNetToggle(){
   const cb=document.getElementById('netVoice');
   if(!cb) return;
-  cb.checked = preferNet && netOK;
-  cb.onchange = ()=>{ preferNet=cb.checked; localStorage.setItem('preferNet', preferNet?'1':'0'); say('Hi! Let us read together!'); };
+  cb.checked = preferNat && natOK;
+  cb.onchange = ()=>{ preferNat=cb.checked; localStorage.setItem('preferNat', preferNat?'1':'0'); sayUI('hello'); };
 }
 
 /* ============ Build tabs ============ */
@@ -434,7 +434,7 @@ ORDER.forEach(d=>{
   const b=document.createElement('button');
   b.className='tab'; b.dataset.d=d;
   b.innerHTML = d.toUpperCase()+'<small>tap me</small>';
-  b.onclick=()=>{ selectTab(d); say(DIGRAPHS[d].say); };
+  b.onclick=()=>{ selectTab(d); sayDigraph(d); };
   tabsEl.appendChild(b);
 });
 
@@ -464,7 +464,7 @@ function selectTab(d){
         <p class="says">The letters ${d.split('').join(' and ')} together…</p>
         <p class="sound" style="color:${data.color}">${data.sound}</p>
         <p class="mouth">Listen and say it with me!</p>
-        <button class="speak" style="margin-top:10px" onclick="say(DIGRAPHS['${d}'].say, 0.82)">
+        <button class="speak" style="margin-top:10px" onclick="sayDigraph('${d}')">
           <span class="ic">🔊</span> Hear the sound
         </button>
       </div>
@@ -480,14 +480,17 @@ function playWord(el,w){
   document.querySelectorAll('.word').forEach(x=>x.classList.remove('playing'));
   el.classList.add('playing');
   setTimeout(()=>el.classList.remove('playing'),600);
-  say(w, 0.85);
+  sayWord(w);
 }
 async function readAll(d){
   const id=newSession();
   for(const o of DIGRAPHS[d].words){
     if(id!==sessionId) return;
-    await utter(o.w, 0.82, id);
-    await wait(220);
+    if(preferNat && natOK){
+      try{ await playClip(clipSrc('words', o.w.toLowerCase()), WORD_RATE, id); }
+      catch(e){ if(e&&e.message==='clip'){ natOK=false; updateVoiceUI(); } await synthSay(o.w, WORD_RATE, id); }
+    } else { await synthSay(o.w, WORD_RATE, id); }
+    await wait(240);
   }
 }
 
@@ -513,8 +516,8 @@ function nextQuestion(){
   document.getElementById('qreplay').style.display='inline-flex';
   document.getElementById('qnext').style.display='none';
   // gentle intro, then say the word 3 times spaced out
-  say('Listen.', 0.9);
-  qTimer=setTimeout(()=>speakRepeat(qItem.w, 3, 950), 900);
+  sayUI('listen');
+  qTimer=setTimeout(()=>speakRepeat(qItem.w, 3, 1050), 1100);
   // choices: correct + 2 random others
   let opts=new Set([qItem.d]);
   while(opts.size<3){ opts.add(ORDER[Math.floor(Math.random()*ORDER.length)]); }
@@ -547,11 +550,14 @@ function answer(btn,d){
   revealWord(qItem);             // always show the written word at the end
   if(d===qAnswer){
     btn.classList.add('right'); qScore++;
-    say('Yes! '+qItem.w+'. Great job!',0.85);
+    playSeq([{kind:'ui',name:'yes',text:'Yes!',rate:UI_RATE},
+             {kind:'words',name:qItem.w.toLowerCase(),text:qItem.w,rate:WORD_RATE},
+             {kind:'ui',name:'greatjob',text:'Great job!',rate:UI_RATE}]);
     confetti();
   }else{
     btn.classList.add('wrong');
-    say('Almost! The word is '+qItem.w+'. It has the '+qItem.d.split('').join(' ')+' sound.',0.8);
+    playSeq([{kind:'ui',name:'almost',text:'Almost! The word is',rate:UI_RATE},
+             {kind:'words',name:qItem.w.toLowerCase(),text:qItem.w,rate:WORD_RATE}]);
   }
   document.getElementById('qnext').style.display='inline-flex';  // advance only when she taps
   updateScore();
@@ -626,7 +632,9 @@ function showSpell(){
   const html=spItem.w.replace(re,'<b style="color:var(--'+spItem.d+')">$1</b>');
   document.getElementById('spfeedback').innerHTML =
     'The word is: <span class="reveal" style="font-size:1.3em;font-weight:900">'+html+'</span>';
-  say('The word is '+spItem.w+'. Check your writing!',0.85);
+  playSeq([{kind:'ui',name:'thewordis',text:'The word is',rate:UI_RATE},
+           {kind:'words',name:spItem.w.toLowerCase(),text:spItem.w,rate:WORD_RATE},
+           {kind:'ui',name:'checkwriting',text:'Now check your writing!',rate:UI_RATE}]);
 }
 document.getElementById('sphear').onclick=()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); };
 function updateScore(){
@@ -702,7 +710,7 @@ tcanvas.addEventListener('pointerup',endDraw);
 tcanvas.addEventListener('pointercancel',endDraw);
 tcanvas.addEventListener('pointerleave',endDraw);
 window.addEventListener('resize',()=>{ sizeCanvas(); sizeSpCanvas(); });
-document.getElementById('tracesound').onclick=()=>say(DIGRAPHS[traceLetters].say);
+document.getElementById('tracesound').onclick=()=>sayDigraph(traceLetters);
 
 /* ============ Init ============ */
 initNetToggle();
