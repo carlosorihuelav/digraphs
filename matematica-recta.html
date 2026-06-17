@@ -253,15 +253,19 @@ async function hopSequence(a,b,op){
   const id=++animId;
   const opUI = op==='+'?'mas':'menos';
   placeFrog(0,true); await wait(380); if(id!==animId) return frogPos;
-  // big jump to the first number (announce it)
-  placeFrog(a); sayN(a); await wait(950); if(id!==animId) return frogPos;
+  // big jump to the first number — wait for it to land, then say it fully
+  placeFrog(a); await wait(300); if(id!==animId) return frogPos;
+  await sayN(a); if(id!==animId) return frogPos;
+  await wait(250); if(id!==animId) return frogPos;
   let pos=a;
   for(let k=0;k<b;k++){
     pos += (op==='+'?1:-1); pos=Math.max(0,Math.min(N,pos));
     placeFrog(pos);
-    // count the jump itself: "más uno", "más dos", … (or "menos …")
-    playSeq([{kind:'ui',name:opUI},{kind:'num',name:'n'+(k+1),text:NUMWORDS[k+1]}]);
-    await wait(1150); if(id!==animId) return frogPos;
+    await wait(320); if(id!==animId) return frogPos;     // let the hop land first
+    // count the jump and WAIT until it finishes before the next hop → audio always heard
+    await playSeq([{kind:'ui',name:opUI},{kind:'num',name:'n'+(k+1),text:NUMWORDS[k+1]}]);
+    if(id!==animId) return frogPos;
+    await wait(220); if(id!==animId) return frogPos;
   }
   await wait(300);
   // full equation: "a más b es igual a resultado"
