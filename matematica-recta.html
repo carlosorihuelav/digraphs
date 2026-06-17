@@ -185,7 +185,7 @@ if('speechSynthesis' in window){ refreshVoices(); speechSynthesis.onvoiceschange
 let preferNat=(localStorage.getItem('preferNat')!=='0'), natOK=true, sessionId=0;
 const uaudio=new Audio(); uaudio.preload='auto';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const UI_RATE=0.95;
+const UI_RATE=1.18;   // snappier playback for numbers and counting
 function stopAll(){ try{speechSynthesis.cancel();}catch(e){} try{uaudio.onended=null;uaudio.onerror=null;uaudio.pause();}catch(e){} }
 function newSession(){ stopAll(); return ++sessionId; }
 function clipSrc(kind,name){ return 'audio/math/'+kind+'/'+name+'.mp3'; }
@@ -252,20 +252,20 @@ function onCellTap(i){ if(cellHandler){ cellHandler(i); } else if(mode==='explor
 async function hopSequence(a,b,op){
   const id=++animId;
   const opUI = op==='+'?'mas':'menos';
-  placeFrog(0,true); await wait(380); if(id!==animId) return frogPos;
+  placeFrog(0,true); await wait(300); if(id!==animId) return frogPos;
   // big jump to the first number — wait for it to land, then say it fully
-  placeFrog(a); await wait(300); if(id!==animId) return frogPos;
+  placeFrog(a); await wait(220); if(id!==animId) return frogPos;
   await sayN(a); if(id!==animId) return frogPos;
-  await wait(250); if(id!==animId) return frogPos;
+  await wait(140); if(id!==animId) return frogPos;
   let pos=a;
   for(let k=0;k<b;k++){
     pos += (op==='+'?1:-1); pos=Math.max(0,Math.min(N,pos));
     placeFrog(pos);
-    await wait(320); if(id!==animId) return frogPos;     // let the hop land first
+    await wait(180); if(id!==animId) return frogPos;     // let the hop land first
     // count the jump and WAIT until it finishes before the next hop → audio always heard
     await playSeq([{kind:'ui',name:opUI},{kind:'num',name:'n'+(k+1),text:NUMWORDS[k+1]}]);
     if(id!==animId) return frogPos;
-    await wait(220); if(id!==animId) return frogPos;
+    await wait(120); if(id!==animId) return frogPos;
   }
   await wait(300);
   // full equation: "a más b es igual a resultado"
