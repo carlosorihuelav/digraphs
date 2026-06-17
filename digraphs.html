@@ -276,6 +276,7 @@
     <div class="choices" id="spbuttons" style="display:none">
       <button class="speak big" style="padding:16px 30px" onclick="checkSpell()"><span class="ic">🔎</span> Check</button>
     </div>
+    <button class="speak big" id="spnext" style="display:none" onclick="spAdvance()"><span class="ic">➡️</span> Next word</button>
     <div id="spresult" style="display:none"></div>
     <div class="score" id="spscore"></div>
     <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
@@ -482,11 +483,6 @@ function selectTab(d){
   if(typeof drawGuide==='function') drawGuide();
   if(typeof updateSpellTag==='function') updateSpellTag();
   if(typeof updateQuizTag==='function') updateQuizTag();
-  // if the writing game is running, switch it to the new digraph (no audio)
-  const sb=document.getElementById('spbox');
-  if(sb && sb.style.display!=='none' && typeof nextSpell==='function') nextSpell(true);
-  // if the listening game is running, switch it to the new digraph (no audio)
-  if(typeof quizStarted!=='undefined' && quizStarted && typeof nextQuestion==='function') nextQuestion(true);
   // Video 2 follows the selected digraph (Video 1 stays general)
   const v2=document.getElementById('vid2frame');
   if(v2 && DIGRAPHS[d].video){
@@ -545,7 +541,7 @@ async function readAll(d){
 }
 
 /* ============ Shared game helpers ============ */
-const ROUNDS = 15;
+const ROUNDS = 5;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 // A big star that fills yellow from the bottom up to `pct`% correct.
 function starHTML(idp, pct){
@@ -564,12 +560,16 @@ function praiseFor(p){ return p>=90?'Amazing! 🌟':(p>=70?'Great job! ⭐':(p>=
 
 /* ============ Quiz: listen → tap the right word (current digraph only) ============ */
 let qScore=0, qTotal=0, qAnswer=null, qItem=null, qAnswered=false, qTimer=null, quizStarted=false;
+let qQueue=[], gameDigraphQ='sh';
 function updateQuizTag(){
-  const t=document.getElementById('quizTag');
-  if(t){ t.textContent=currentDigraph.toUpperCase(); t.style.color='var(--'+currentDigraph+')'; }
+  const t=document.getElementById('quizTag'); const d=quizStarted?gameDigraphQ:currentDigraph;
+  if(t){ t.textContent=d.toUpperCase(); t.style.color='var(--'+d+')'; }
 }
 function startQuiz(){
   quizStarted=true; qScore=0; qTotal=0;
+  gameDigraphQ=currentDigraph;
+  qQueue=shuffle(DIGRAPHS[gameDigraphQ].words.slice()).slice(0,ROUNDS);   // 5 distinct, no repeats
+  updateQuizTag();
   document.getElementById('qresult').style.display='none';
   ['qemoji','qword','qscore'].forEach(id=>document.getElementById(id).style.display='');
   document.getElementById('qstart').innerHTML='<span class="ic">🔄</span> Play again';
@@ -586,33 +586,31 @@ function showQuizResult(){
   playSeq([{kind:'ui',name:'finished',text:'You finished! Look at your star!',rate:UI_RATE}]);
   confetti();
 }
-function nextQuestion(silent){
+function nextQuestion(){
   qAnswered=false;
-  const pool=DIGRAPHS[currentDigraph].words;
-  const target=pool[Math.floor(Math.random()*pool.length)];
-  qItem={...target, d:currentDigraph}; qAnswer=target.w;
+  const pool=DIGRAPHS[gameDigraphQ].words;
+  const target=qQueue.shift() || pool[Math.floor(Math.random()*pool.length)];
+  qItem={...target, d:gameDigraphQ}; qAnswer=target.w;
   document.getElementById('qword').textContent='Listen and tap the word 👂';
   document.getElementById('qreplay').style.display='inline-flex';
   document.getElementById('qnext').style.display='none';
-  // three word options, all from the SAME digraph
+  // three word options from the same digraph (distractors may repeat; the asked word never does)
   const others=shuffle(pool.filter(o=>o.w!==target.w)).slice(0,2);
   const opts=shuffle([target, ...others]);
-  const re=new RegExp('('+currentDigraph+')','i');
+  const re=new RegExp('('+gameDigraphQ+')','i');
   const ch=document.getElementById('qchoices'); ch.innerHTML='';
   opts.forEach(o=>{
     const b=document.createElement('button');
     b.className='qchoice'; b.dataset.w=o.w;
-    const wh=o.w.replace(re,'<b style="color:var(--'+currentDigraph+')">$1</b>');
+    const wh=o.w.replace(re,'<b style="color:var(--'+gameDigraphQ+')">$1</b>');
     b.innerHTML='<span class="emoji">'+o.e+'</span><span class="label">'+wh+'</span>';
     b.onclick=()=>answer(b,o.w);
     ch.appendChild(b);
   });
   updateScore();
   if(qTimer){ clearTimeout(qTimer); qTimer=null; }
-  if(!silent){
-    sayUI('listen');
-    qTimer=setTimeout(()=>speakRepeat(target.w, 3, 1050), 1000);
-  }
+  sayUI('listen');
+  qTimer=setTimeout(()=>speakRepeat(target.w, 3, 1050), 1000);
 }
 function answer(btn,w){
   if(qAnswered) return;          // one answer per question
@@ -641,11 +639,11 @@ document.getElementById('qreplay').onclick=()=>{ if(qItem) speakRepeat(qItem.w, 
 
 /* ============ Spelling (handwriting) ============ */
 let spItem=null;
-let currentDigraph='sh';                 // set by the active tab; spelling uses only this digraph's words
-function spellWords(){ return DIGRAPHS[currentDigraph].words.map(o=>({...o, d:currentDigraph})); }
+let currentDigraph='sh';                 // set by the active tab
+let spQueue=[], gameDigraphS='sh', spellStarted=false;
 function updateSpellTag(){
-  const t=document.getElementById('spellTag');
-  if(t){ t.textContent=currentDigraph.toUpperCase(); t.style.color='var(--'+currentDigraph+')'; }
+  const t=document.getElementById('spellTag'); const d=spellStarted?gameDigraphS:currentDigraph;
+  if(t){ t.textContent=d.toUpperCase(); t.style.color='var(--'+d+')'; }
 }
 const spcanvas=document.getElementById('spcanvas');
 const spctx=spcanvas.getContext('2d');
@@ -701,27 +699,39 @@ spcanvas.addEventListener('pointerleave',spEnd);
 
 let spAttempt=1, spScore=0, spTotal=0, spChecking=false;
 function startSpell(){
-  spScore=0; spTotal=0;
+  spScore=0; spTotal=0; spellStarted=true;
+  gameDigraphS=currentDigraph;
+  spQueue=shuffle(DIGRAPHS[gameDigraphS].words.slice()).slice(0,ROUNDS);   // 5 distinct, no repeats
+  updateSpellTag();
   document.getElementById('spresult').style.display='none';
   ['spemoji','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='');
   document.getElementById('spbox').style.display='block';
-  document.getElementById('spbuttons').style.display='flex';
   document.getElementById('sphear').style.display='inline-flex';
   document.getElementById('spstart').style.display='none';
   document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
   sizeSpCanvas();
   nextSpell();
 }
-function nextSpell(silent){
+function nextSpell(){
   spAttempt=1;
-  const pool=spellWords();
-  spItem=pool[Math.floor(Math.random()*pool.length)];
+  const pool=DIGRAPHS[gameDigraphS].words;
+  const w=spQueue.shift() || pool[Math.floor(Math.random()*pool.length)];
+  spItem={...w, d:gameDigraphS};
   document.getElementById('spemoji').textContent=spItem.e;
   document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
+  document.getElementById('spbuttons').style.display='flex';   // show Check
+  document.getElementById('spnext').style.display='none';      // hide Next until resolved
   drawSpGuide(); resetInk();
   updateSpScore();
-  if(!silent) speakRepeat(spItem.w, 2, 950);
+  speakRepeat(spItem.w, 2, 950);
 }
+function showSpNext(){
+  document.getElementById('spbuttons').style.display='none';
+  const b=document.getElementById('spnext');
+  b.innerHTML=(spTotal>=ROUNDS)?'<span class="ic">⭐</span> See my star':'<span class="ic">➡️</span> Next word';
+  b.style.display='inline-flex';
+}
+function spAdvance(){ if(spTotal>=ROUNDS) showSpellResult(); else nextSpell(); }
 document.getElementById('sphear').onclick=()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); };
 
 function wordHTML(item){
@@ -772,7 +782,7 @@ async function checkSpell(){
              {kind:'words',name:target,text:spItem.w,rate:WORD_RATE},
              {kind:'ui',name:'greatjob',text:'Great job!',rate:UI_RATE}]);
     confetti(); updateSpScore();
-    setTimeout(advanceSpell, 1700);
+    showSpNext();                                 // wait for her to tap Next
   }else if(spAttempt===1){
     spAttempt=2;
     drawSpGuide(); resetInk();                    // clear + one more try, WITHOUT showing the word
@@ -781,15 +791,15 @@ async function checkSpell(){
     setTimeout(()=>{ if(spItem) speakRepeat(spItem.w, 2, 950); }, 1500);
   }else{
     spTotal++;                                    // second miss → count wrong and move on (word stays hidden)
-    spFeedback('Good try! Here is the next word ➡️');
+    spFeedback('Good try! Tap Next to keep going ➡️');
     playSeq([{kind:'ui',name:'goodtry',text:'Good try! Here is the next word.',rate:UI_RATE}]);
     updateSpScore();
-    setTimeout(advanceSpell, 1700);
+    showSpNext();
   }
 }
-function advanceSpell(){ if(spTotal>=ROUNDS) showSpellResult(); else nextSpell(); }
 function showSpellResult(){
-  ['spemoji','sphear','spbox','spbuttons','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='none');
+  spellStarted=false;
+  ['spemoji','sphear','spbox','spbuttons','spnext','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='none');
   const pct=Math.round(spScore/ROUNDS*100);
   document.getElementById('spresult').innerHTML =
     starHTML('sp', pct)+'<div class="resultmsg">You wrote <b>'+spScore+' / '+ROUNDS+'</b> correctly!<br>'+praiseFor(pct)+'</div>';

@@ -168,6 +168,7 @@
     <div class="choices" id="spbuttons" style="display:none">
       <button class="speak big" style="padding:16px 30px" onclick="checkSpell()"><span class="ic">🔎</span> Check</button>
     </div>
+    <button class="speak big" id="spnext" style="display:none" onclick="spAdvance()"><span class="ic">➡️</span> Next word</button>
     <div id="spresult" style="display:none"></div>
     <div class="score" id="spscore"></div>
     <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
@@ -335,7 +336,7 @@ function selectTab(p){
 }
 
 /* ============ Shared helpers ============ */
-const ROUNDS=15;
+const ROUNDS=5;
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function starHTML(idp,pct){
   const fill=Math.max(0,Math.min(100,Math.round(pct))), gid=idp+'-star-grad';
@@ -356,9 +357,10 @@ function confetti(){
 }
 
 /* ============ Listening game (distinguish prepositions) ============ */
-let qScore=0,qTotal=0,qAnswer=null,qItem=null,qAnswered=false,qTimer=null,quizStarted=false;
+let qScore=0,qTotal=0,qAnswer=null,qItem=null,qAnswered=false,qTimer=null,quizStarted=false,qQueue=[];
 function startQuiz(){
   quizStarted=true; qScore=0; qTotal=0;
+  qQueue=shuffle(ORDER.slice()).slice(0,ROUNDS);   // 5 distinct prepositions, no repeats
   document.getElementById('qresult').style.display='none';
   ['qword','qscore'].forEach(id=>document.getElementById(id).style.display='');
   document.getElementById('qstart').innerHTML='<span class="ic">🔄</span> Play again';
@@ -373,9 +375,9 @@ function showQuizResult(){
   document.getElementById('qstart').style.display='inline-flex';
   playSeq([{kind:'ui',name:'finished',rate:UI_RATE}]); confetti();
 }
-function nextQuestion(silent){
+function nextQuestion(){
   qAnswered=false;
-  const target=ORDER[Math.floor(Math.random()*ORDER.length)];
+  const target=qQueue.shift() || ORDER[Math.floor(Math.random()*ORDER.length)];
   qItem=target; qAnswer=target;
   document.getElementById('qword').textContent='Listen and tap the picture 👂';
   document.getElementById('qreplay').style.display='inline-flex';
@@ -391,7 +393,7 @@ function nextQuestion(silent){
   });
   updateScore();
   if(qTimer){ clearTimeout(qTimer); qTimer=null; }
-  if(!silent){ sayUI('listen'); qTimer=setTimeout(()=>repeatSay(target,2,1150),1000); }
+  sayUI('listen'); qTimer=setTimeout(()=>repeatSay(target,2,1150),1000);
 }
 function answer(btn,p){
   if(qAnswered) return;
@@ -418,7 +420,7 @@ function updateScore(){ const s=document.getElementById('qscore'); s.innerHTML=q
 
 /* ============ Writing game ============ */
 const spcanvas=document.getElementById('spcanvas'), spctx=spcanvas.getContext('2d');
-let spDrawing=false, spItem=null, spAttempt=1, spScore=0, spTotal=0, spChecking=false;
+let spDrawing=false, spItem=null, spAttempt=1, spScore=0, spTotal=0, spChecking=false, spQueue=[];
 let spStrokes=[], spCur=null, spT0=0;
 function sizeSpCanvas(){
   const box=document.getElementById('spbox'); if(box.style.display==='none') return;
@@ -449,10 +451,10 @@ spcanvas.addEventListener('pointerup',spEnd); spcanvas.addEventListener('pointer
 
 function startSpell(){
   spScore=0; spTotal=0;
+  spQueue=shuffle(ORDER.slice()).slice(0,ROUNDS);   // 5 distinct, no repeats
   document.getElementById('spresult').style.display='none';
   ['spemoji','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='');
   document.getElementById('spbox').style.display='block';
-  document.getElementById('spbuttons').style.display='flex';
   document.getElementById('sphear').style.display='inline-flex';
   document.getElementById('spstart').style.display='none';
   document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
@@ -460,13 +462,22 @@ function startSpell(){
 }
 function nextSpell(){
   spAttempt=1;
-  const target=ORDER[Math.floor(Math.random()*ORDER.length)];
+  const target=spQueue.shift() || ORDER[Math.floor(Math.random()*ORDER.length)];
   spItem={w:target};
   document.getElementById('spemoji').innerHTML='<div style="width:clamp(220px,42vw,300px);margin:0 auto">'+sceneHTML(target,'🐱','📦',150,0.95)+'</div>';
   document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
+  document.getElementById('spbuttons').style.display='flex';   // show Check
+  document.getElementById('spnext').style.display='none';      // hide Next until resolved
   drawSpGuide(); resetInk(); updateSpScore();
   repeatSay(target,2,1150);
 }
+function showSpNext(){
+  document.getElementById('spbuttons').style.display='none';
+  const b=document.getElementById('spnext');
+  b.innerHTML=(spTotal>=ROUNDS)?'<span class="ic">⭐</span> See my star':'<span class="ic">➡️</span> Next word';
+  b.style.display='inline-flex';
+}
+function spAdvance(){ if(spTotal>=ROUNDS) showSpellResult(); else nextSpell(); }
 document.getElementById('sphear').onclick=()=>{ if(spItem) repeatSay(spItem.w,2,1150); };
 function spFeedback(h){ document.getElementById('spfeedback').innerHTML=h; }
 function wordBig(w){ return '<span style="font-size:1.3em;font-weight:900;color:'+COLORHEX[w]+'">'+w+'</span>'; }
@@ -494,20 +505,19 @@ async function checkSpell(){
     spScore++; spTotal++;
     spFeedback('🎉 Yes! '+wordBig(spItem.w));
     playSeq([{kind:'ui',name:'yes',rate:UI_RATE},{kind:'words',name:target,text:spItem.w,rate:WORD_RATE},{kind:'ui',name:'greatjob',rate:UI_RATE}]);
-    confetti(); updateSpScore(); setTimeout(advanceSpell,1700);
+    confetti(); updateSpScore(); showSpNext();
   }else if(spAttempt===1){
     spAttempt=2; drawSpGuide(); resetInk();
     spFeedback('Not quite — let’s clean and try again! ✍️');
     playSeq([{kind:'ui',name:'tryagain',rate:UI_RATE}]);
     setTimeout(()=>{ if(spItem) repeatSay(spItem.w,2,1150); },1500);
   }else{
-    spTotal++; spFeedback('Good try! Here is the next one ➡️');
-    playSeq([{kind:'ui',name:'goodtry',rate:UI_RATE}]); updateSpScore(); setTimeout(advanceSpell,1700);
+    spTotal++; spFeedback('Good try! Tap Next to keep going ➡️');
+    playSeq([{kind:'ui',name:'goodtry',rate:UI_RATE}]); updateSpScore(); showSpNext();
   }
 }
-function advanceSpell(){ if(spTotal>=ROUNDS) showSpellResult(); else nextSpell(); }
 function showSpellResult(){
-  ['spemoji','sphear','spbox','spbuttons','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='none');
+  ['spemoji','sphear','spbox','spbuttons','spnext','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='none');
   const pct=Math.round(spScore/ROUNDS*100);
   document.getElementById('spresult').innerHTML=starHTML('sp',pct)+'<div class="resultmsg">You wrote <b>'+spScore+' / '+ROUNDS+'</b> correctly!<br>'+praiseFor(pct)+'</div>';
   document.getElementById('spresult').style.display='block';
