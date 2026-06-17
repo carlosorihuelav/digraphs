@@ -185,14 +185,18 @@ if('speechSynthesis' in window){ refreshVoices(); speechSynthesis.onvoiceschange
 let preferNat=(localStorage.getItem('preferNat')!=='0'), natOK=true, sessionId=0;
 const uaudio=new Audio(); uaudio.preload='auto';
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const UI_RATE=1.18;   // snappier playback for numbers and counting
+const UI_RATE=1.25;   // snappier playback for numbers and counting
 function stopAll(){ try{speechSynthesis.cancel();}catch(e){} try{uaudio.onended=null;uaudio.onerror=null;uaudio.pause();}catch(e){} }
 function newSession(){ stopAll(); return ++sessionId; }
 function clipSrc(kind,name){ return 'audio/math/'+kind+'/'+name+'.mp3'; }
 function playClip(src,rate,id){
   return new Promise((res,rej)=>{ if(id!==sessionId) return res();
+    const r=rate||1;
     uaudio.onended=()=>res(); uaudio.onerror=()=>rej(new Error('clip'));
-    uaudio.src=src; uaudio.playbackRate=rate||1;
+    uaudio.defaultPlaybackRate=r;          // persists across the new resource load (so the rate actually applies)
+    uaudio.src=src;
+    uaudio.playbackRate=r;
+    uaudio.onloadedmetadata=()=>{ uaudio.playbackRate=r; };   // re-apply once loaded, just in case
     const p=uaudio.play(); if(p&&p.catch) p.catch(()=>rej(new Error('block'))); });
 }
 function synthSay(text,rate,id){
