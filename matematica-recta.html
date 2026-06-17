@@ -137,6 +137,11 @@
     <div class="hintq" id="gHint">Toca EMPEZAR para jugar</div>
     <div class="eq" id="gEq"></div>
     <button class="speak" id="gReplay" style="display:none;padding:12px 20px;font-size:18px;margin:0 auto"><span class="ic">🔊</span> Escuchar otra vez</button>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:12px">
+      <button class="speak" id="gJump" style="display:none;padding:14px 24px;font-size:21px" onclick="saltito()"><span class="ic">🐸</span> Saltito</button>
+      <button class="speak" id="gReset" style="display:none;padding:14px 18px;font-size:17px" onclick="resetHops()"><span class="ic">🔄</span> Volver al inicio</button>
+    </div>
+    <button class="speak big" id="gConfirm" style="display:none" onclick="confirmResult()"><span class="ic">✅</span> El resultado es</button>
     <div id="gResult" style="display:none"></div>
     <div class="score" id="gScoreEl"></div>
     <button class="speak big" id="gNext" style="display:none" onclick="gAdvance()"><span class="ic">➡️</span> Siguiente</button>
@@ -241,7 +246,7 @@ function placeFrog(i, instant){
 function clearMarks(){ document.querySelectorAll('#ticks .cell').forEach(c=>{ c.classList.remove('right','wrong'); }); }
 function markCell(i,cls){ const c=document.querySelector('#ticks .cell[data-n="'+i+'"]'); if(c) c.classList.add(cls); }
 let cellHandler=null;
-function onCellTap(i){ if(cellHandler){ cellHandler(i); } else { placeFrog(i); sayN(i); } }
+function onCellTap(i){ if(cellHandler){ cellHandler(i); } else if(mode==='explore'){ placeFrog(i); sayN(i); } }
 
 // Animate: big jump to a, then b small hops counting "+1, +2, …", then the full equation.
 async function hopSequence(a,b,op){
@@ -310,6 +315,7 @@ function resetGameUI(m){
   document.getElementById('gEq').innerHTML='';
   document.getElementById('gReplay').style.display='none';
   document.getElementById('gNext').style.display='none';
+  ['gJump','gReset','gConfirm'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('gScoreEl').innerHTML='';
   const s=document.getElementById('gStart'); s.style.display='inline-flex'; s.innerHTML='<span class="ic">▶️</span> EMPEZAR';
 }
@@ -323,16 +329,25 @@ function startCurrentGame(){
   nextRound();
 }
 function gAdvance(){ if(gTotal>=ROUNDS) showGameResult(); else nextRound(); }
+let gPhase='first', hopsDone=0, wrongConfirm=false;
+function setGameButtons(phase){
+  const hop = phase==='hop';
+  document.getElementById('gJump').style.display = hop?'inline-flex':'none';
+  document.getElementById('gReset').style.display = hop?'inline-flex':'none';
+  document.getElementById('gConfirm').style.display = hop?'inline-flex':'none';
+  document.getElementById('gNext').style.display = (phase==='done')?'inline-flex':'none';
+  document.getElementById('gJump').innerHTML = (gOp==='+')?'<span class="ic">🐸</span> Saltito adelante':'<span class="ic">🐸</span> Saltito atrás';
+}
 function nextRound(){
-  gAnswered=false;
+  gAnswered=false; hopsDone=0; wrongConfirm=false; gPhase='first';
   if(gOp==='+'){ do{ gA=rnd(1,9); gB=rnd(1,9); }while(gA+gB>N); gAns=gA+gB; }
-  else { gA=rnd(2,N); gB=rnd(1,gA); gAns=gA-gB; }
+  else { gA=rnd(3,N); gB=rnd(1,Math.min(gA,9)); gAns=gA-gB; }
   clearMarks(); placeFrog(0,true);
-  document.getElementById('gHint').textContent='¿Cuánto es? Toca el número 👇';
   document.getElementById('gEq').innerHTML = gA+' '+(gOp==='+'?'+':'−')+' '+gB+' = <b>?</b>';
-  document.getElementById('gNext').style.display='none';
+  document.getElementById('gHint').innerHTML = 'Salta al primer número: <b>'+gA+'</b> 👆';
+  setGameButtons('first');
   updateGScore();
-  cellHandler=checkAnswer;
+  cellHandler=pickFirst;
   announce();
 }
 function announce(){
@@ -342,23 +357,56 @@ function announce(){
            {kind:'ui',name:'question'}]);
 }
 document.getElementById('gReplay').onclick=announce;
-async function checkAnswer(i){
-  if(gAnswered) return; gAnswered=true; gTotal++; cellHandler=null;
-  markCell(i, i===gAns?'right':'wrong');
-  if(i!==gAns) markCell(gAns,'right');
-  document.getElementById('gEq').innerHTML = gA+' '+(gOp==='+'?'+':'−')+' '+gB+' = <b style="color:var(--g)">'+gAns+'</b>';
-  if(i===gAns){ gScore++; await playSeq([{kind:'ui',name:'yes'}]); }
-  else { await playSeq([{kind:'ui',name:'almost'},{kind:'num',name:'n'+gAns,text:NUMWORDS[gAns]}]); }
-  await hopSequence(gA,gB,gOp);        // demuestra los saltos
-  if(i===gAns) confetti();
-  updateGScore();
-  const nx=document.getElementById('gNext');
-  nx.innerHTML=(gTotal>=ROUNDS)?'<span class="ic">⭐</span> Ver mi estrella':'<span class="ic">➡️</span> Siguiente';
-  nx.style.display='inline-flex';
+function pickFirst(i){
+  if(gPhase!=='first') return;
+  if(i===gA){
+    gPhase='hop'; cellHandler=null;
+    placeFrog(gA); sayN(gA);
+    document.getElementById('gHint').innerHTML = (gOp==='+')
+      ? 'Ahora da <b>'+gB+'</b> saltito(s) hacia adelante ➡️'
+      : 'Ahora da <b>'+gB+'</b> saltito(s) hacia atrás ⬅️';
+    updateConfirm();
+    setGameButtons('hop');
+  } else {
+    document.getElementById('gHint').innerHTML = 'Primero salta al <b>'+gA+'</b> 👆';
+    sayN(gA);
+  }
+}
+function saltito(){
+  if(gPhase!=='hop') return;
+  let np=frogPos+(gOp==='+'?1:-1); np=Math.max(0,Math.min(N,np));
+  if(np===frogPos) return;
+  placeFrog(np); hopsDone++;
+  playSeq([{kind:'ui',name:(gOp==='+'?'mas':'menos')},{kind:'num',name:'n'+hopsDone,text:NUMWORDS[hopsDone]}]);
+  updateConfirm();
+}
+function resetHops(){ if(gPhase!=='hop') return; placeFrog(gA,true); hopsDone=0; updateConfirm(); }
+function updateConfirm(){ document.getElementById('gConfirm').innerHTML='<span class="ic">✅</span> El resultado es '+frogPos; }
+function confirmResult(){
+  if(gPhase!=='hop') return;
+  const pos=frogPos;
+  if(pos===gAns){
+    gPhase='done'; gAnswered=true; gTotal++;
+    if(!wrongConfirm) gScore++;
+    clearMarks(); markCell(gAns,'right');
+    document.getElementById('gEq').innerHTML = gA+' '+(gOp==='+'?'+':'−')+' '+gB+' = <b style="color:var(--g)">'+gAns+'</b>';
+    document.getElementById('gHint').innerHTML = '¡Muy bien! 🎉';
+    setGameButtons('done');
+    const nx=document.getElementById('gNext'); nx.innerHTML=(gTotal>=ROUNDS)?'<span class="ic">⭐</span> Ver mi estrella':'<span class="ic">➡️</span> Siguiente';
+    playSeq([{kind:'ui',name:'yes'},
+             {kind:'num',name:'n'+gA,text:NUMWORDS[gA]},{kind:'ui',name:(gOp==='+'?'mas':'menos')},
+             {kind:'num',name:'n'+gB,text:NUMWORDS[gB]},{kind:'ui',name:'igual'},
+             {kind:'num',name:'n'+gAns,text:NUMWORDS[gAns]}]);
+    confetti(); updateGScore();
+  } else {
+    wrongConfirm=true;
+    document.getElementById('gHint').innerHTML = 'Mmm, estás en el <b>'+pos+'</b>. Sigue saltando o toca 🔄 para empezar de nuevo.';
+    playSeq([{kind:'ui',name:'tryagain'}]);
+  }
 }
 function updateGScore(){ document.getElementById('gScoreEl').innerHTML = gTotal?('✅ '+gScore+' correctas · '+gTotal+' / '+ROUNDS):''; }
 function showGameResult(){
-  ['gEq','gReplay','gNext','gScoreEl','gHint'].forEach(id=>document.getElementById(id).style.display='none');
+  ['gEq','gReplay','gJump','gReset','gConfirm','gNext','gScoreEl','gHint'].forEach(id=>document.getElementById(id).style.display='none');
   const pct=Math.round(gScore/ROUNDS*100);
   document.getElementById('gResult').innerHTML = starHTML('g',pct)+'<div class="resultmsg">¡Acertaste <b>'+gScore+' de '+ROUNDS+'</b>!<br>'+praiseFor(pct)+'</div>';
   document.getElementById('gResult').style.display='block';
