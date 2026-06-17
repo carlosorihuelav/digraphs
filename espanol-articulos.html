@@ -265,31 +265,70 @@
     <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> EMPEZAR</button>
   </section>
 
-  <footer>Hecho con ❤️ para una gran lectora · el · la · los · un · unos</footer>
+  <!-- Fill in the blank (mixed articles) -->
+  <section class="quiz" id="fill">
+    <h2>✍️ Completa: escribe el artículo</h2>
+    <div class="sectionhead" style="margin-top:6px">
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('fillhow')"><span class="ic">🔊</span> Cómo jugar</button>
+    </div>
+    <div class="quizemoji" id="femoji"></div>
+    <div class="quizq" id="fblank" style="font-size:clamp(30px,7vw,52px);font-weight:900;letter-spacing:1px"></div>
+    <button class="speak" id="fhear" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Escuchar la palabra</button>
+    <div class="tracebox" id="fbox" style="display:none;max-width:none;width:100%"><canvas id="fcanvas"></canvas></div>
+    <div class="spellfeedback" id="ffeedback"></div>
+    <div class="choices" id="fbuttons" style="display:none">
+      <button class="speak big" style="padding:16px 30px" onclick="checkFill()"><span class="ic">🔎</span> Revisar</button>
+    </div>
+    <button class="speak big" id="fnext" style="display:none" onclick="fAdvance()"><span class="ic">➡️</span> Siguiente</button>
+    <div id="fresult" style="display:none"></div>
+    <div class="score" id="fscore"></div>
+    <button class="speak big" id="fstart" onclick="startFill()"><span class="ic">▶️</span> EMPEZAR</button>
+  </section>
+
+  <footer>Hecho con ❤️ para una gran lectora · el · la · los · las · un · una · unos · unas</footer>
 </div>
 
 <script>
 /* ============ Data ============ */
+const COLORHEX={el:'#ff6b9d',la:'#ffa931',los:'#37c8a8',las:'#5b8def',un:'#a06bff',una:'#ef476f',unos:'#06d6a0',unas:'#f4845f'};
 const DIGRAPHS = {
-  el:  { color:'var(--sh)', sound:'para uno (el perro)', say:'El. Para una sola cosa. Por ejemplo, el perro, el sol, el gato.',
+  el:  { color:'#ff6b9d', sound:'para uno (el perro)', say:'El. Para una sola cosa. Por ejemplo, el perro, el sol, el gato.',
        words:[ {w:'el_perro',e:'🐕',n:'perro'},{w:'el_sol',e:'☀️',n:'sol'},{w:'el_gato',e:'🐈',n:'gato'},
                {w:'el_libro',e:'📕',n:'libro'},{w:'el_carro',e:'🚗',n:'carro'},{w:'el_pez',e:'🐟',n:'pez'} ]},
-  la:  { color:'var(--ch)', sound:'para una (la casa)', say:'La. Para una sola cosa. Por ejemplo, la casa, la luna, la flor.',
+  la:  { color:'#ffa931', sound:'para una (la casa)', say:'La. Para una sola cosa. Por ejemplo, la casa, la luna, la flor.',
        words:[ {w:'la_casa',e:'🏠',n:'casa'},{w:'la_luna',e:'🌙',n:'luna'},{w:'la_flor',e:'🌸',n:'flor'},
                {w:'la_silla',e:'🪑',n:'silla'},{w:'la_manzana',e:'🍎',n:'manzana'},{w:'la_pelota',e:'⚽',n:'pelota'} ]},
-  los: { color:'var(--th)', sound:'para muchos (los perros)', say:'Los. Para muchas cosas. Por ejemplo, los perros, los gatos, los libros.',
+  los: { color:'#37c8a8', sound:'para muchos (los perros)', say:'Los. Para muchas cosas. Por ejemplo, los perros, los gatos, los libros.',
        words:[ {w:'los_perros',e:'🐕',n:'perros'},{w:'los_gatos',e:'🐈',n:'gatos'},{w:'los_libros',e:'📚',n:'libros'},
                {w:'los_zapatos',e:'👟',n:'zapatos'},{w:'los_globos',e:'🎈',n:'globos'},{w:'los_patos',e:'🦆',n:'patos'} ]},
-  un:  { color:'var(--wh)', sound:'uno cualquiera (un oso)', say:'Un. Para una cosa cualquiera. Por ejemplo, un perro, un árbol, un oso.',
+  las: { color:'#5b8def', sound:'para muchas (las casas)', say:'Las. Para muchas cosas. Por ejemplo, las casas, las flores, las sillas.',
+       words:[ {w:'las_casas',e:'🏠',n:'casas'},{w:'las_flores',e:'🌸',n:'flores'},{w:'las_sillas',e:'🪑',n:'sillas'},
+               {w:'las_manzanas',e:'🍎',n:'manzanas'},{w:'las_lunas',e:'🌙',n:'lunas'},{w:'las_pelotas',e:'⚽',n:'pelotas'} ]},
+  un:  { color:'#a06bff', sound:'uno cualquiera (un oso)', say:'Un. Para una cosa cualquiera. Por ejemplo, un perro, un árbol, un oso.',
        words:[ {w:'un_perro',e:'🐕',n:'perro'},{w:'un_sol',e:'☀️',n:'sol'},{w:'un_gato',e:'🐈',n:'gato'},
                {w:'un_arbol',e:'🌳',n:'árbol'},{w:'un_huevo',e:'🥚',n:'huevo'},{w:'un_oso',e:'🐻',n:'oso'} ]},
-  unos:{ color:'var(--ph)', sound:'muchos cualquiera (unos patos)', say:'Unos. Para muchas cosas. Por ejemplo, unos perros, unos globos, unos patos.',
+  una: { color:'#ef476f', sound:'una sola (una flor)', say:'Una. Para una sola cosa. Por ejemplo, una casa, una luna, una flor.',
+       words:[ {w:'una_casa',e:'🏠',n:'casa'},{w:'una_luna',e:'🌙',n:'luna'},{w:'una_flor',e:'🌸',n:'flor'},
+               {w:'una_silla',e:'🪑',n:'silla'},{w:'una_manzana',e:'🍎',n:'manzana'},{w:'una_pelota',e:'⚽',n:'pelota'} ]},
+  unos:{ color:'#06d6a0', sound:'muchos cualquiera (unos patos)', say:'Unos. Para muchas cosas. Por ejemplo, unos perros, unos globos, unos patos.',
        words:[ {w:'unos_perros',e:'🐕',n:'perros'},{w:'unos_gatos',e:'🐈',n:'gatos'},{w:'unos_globos',e:'🎈',n:'globos'},
-               {w:'unos_patos',e:'🦆',n:'patos'},{w:'unos_osos',e:'🐻',n:'osos'},{w:'unos_huevos',e:'🥚',n:'huevos'} ]}
+               {w:'unos_patos',e:'🦆',n:'patos'},{w:'unos_osos',e:'🐻',n:'osos'},{w:'unos_huevos',e:'🥚',n:'huevos'} ]},
+  unas:{ color:'#f4845f', sound:'muchas cualquiera (unas flores)', say:'Unas. Para muchas cosas. Por ejemplo, unas casas, unas flores, unas pelotas.',
+       words:[ {w:'unas_casas',e:'🏠',n:'casas'},{w:'unas_flores',e:'🌸',n:'flores'},{w:'unas_sillas',e:'🪑',n:'sillas'},
+               {w:'unas_manzanas',e:'🍎',n:'manzanas'},{w:'unas_lunas',e:'🌙',n:'lunas'},{w:'unas_pelotas',e:'⚽',n:'pelotas'} ]}
 };
-const ORDER = ['el','la','los','un','unos'];
+const ORDER = ['el','la','los','las','un','una','unos','unas'];
 const ART_NOUN = {};   // phrase key -> noun, for display
 Object.keys(DIGRAPHS).forEach(a=>DIGRAPHS[a].words.forEach(o=>{ ART_NOUN[o.w]=o.n; o.art=a; }));
+
+/* fill-in exercise: nouns tagged by gender+number → which articles are valid */
+const VALID={ ms:['el','un'], fs:['la','una'], mp:['los','unos'], fp:['las','unas'] };
+const NOUNS=[
+  {n:'perro',e:'🐕',g:'ms'},{n:'gato',e:'🐈',g:'ms'},{n:'sol',e:'☀️',g:'ms'},{n:'oso',e:'🐻',g:'ms'},
+  {n:'casa',e:'🏠',g:'fs'},{n:'luna',e:'🌙',g:'fs'},{n:'flor',e:'🌸',g:'fs'},{n:'pelota',e:'⚽',g:'fs'},
+  {n:'carros',e:'🚗',g:'mp'},{n:'perros',e:'🐕',g:'mp'},{n:'gatos',e:'🐈',g:'mp'},{n:'globos',e:'🎈',g:'mp'},
+  {n:'casas',e:'🏠',g:'fp'},{n:'flores',e:'🌸',g:'fp'},{n:'sillas',e:'🪑',g:'fp'},{n:'manzanas',e:'🍎',g:'fp'}
+];
 
 /* ============ Speech ============ */
 let enVoice = null;
@@ -435,7 +474,7 @@ function initNetToggle(){
 const tabsEl = document.getElementById('tabs');
 ORDER.forEach(d=>{
   const b=document.createElement('button');
-  b.className='tab'; b.dataset.d=d;
+  b.className='tab'; b.dataset.d=d; b.style.background=COLORHEX[d];
   b.innerHTML = d.toUpperCase()+'<small>tócame</small>';
   b.onclick=()=>{ selectTab(d); sayDigraph(d); };
   tabsEl.appendChild(b);
@@ -783,11 +822,105 @@ function confetti(){
   }
 }
 
+/* ============ Fill-in exercise: write the article (mixed) ============ */
+const fcanvas=document.getElementById('fcanvas'), fctx=fcanvas.getContext('2d');
+let fDrawing=false, fStrokes=[], fCur=null, fT0=0;
+let fItem=null, fAttempt=1, fScore=0, fTotal=0, fChecking=false, fQueue=[];
+function sizeFCanvas(){
+  const box=document.getElementById('fbox'); if(box.style.display==='none') return;
+  const w=box.clientWidth, h=Math.max(170, Math.min(Math.round(w*0.30), 340));
+  const dpr=window.devicePixelRatio||1;
+  fcanvas.width=w*dpr; fcanvas.height=h*dpr; fcanvas.style.height=h+'px';
+  fctx.setTransform(dpr,0,0,dpr,0,0); drawFGuide();
+}
+function drawFGuide(){
+  const w=fcanvas.clientWidth, h=fcanvas.clientHeight; fctx.clearRect(0,0,w,h); fctx.save();
+  fctx.strokeStyle='#ece8f7'; fctx.lineWidth=2;
+  fctx.beginPath(); fctx.moveTo(0,h*0.28); fctx.lineTo(w,h*0.28); fctx.stroke();
+  fctx.beginPath(); fctx.moveTo(0,h*0.82); fctx.lineTo(w,h*0.82); fctx.stroke();
+  fctx.strokeStyle='#ddd6f3'; fctx.setLineDash([8,10]);
+  fctx.beginPath(); fctx.moveTo(0,h*0.55); fctx.lineTo(w,h*0.55); fctx.stroke(); fctx.restore();
+}
+function fPos(e){ const r=fcanvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+function fStartDraw(e){ fDrawing=true; const p=fPos(e); if(!fStrokes.length) fT0=performance.now(); fCur=[{x:p.x,y:p.y,t:performance.now()-fT0}]; fStrokes.push(fCur); fctx.beginPath(); fctx.moveTo(p.x,p.y); e.preventDefault(); }
+function fMoveDraw(e){ if(!fDrawing) return; const p=fPos(e); if(fCur) fCur.push({x:p.x,y:p.y,t:performance.now()-fT0});
+  fctx.strokeStyle='#5b8def'; fctx.lineWidth=12; fctx.lineCap='round'; fctx.lineJoin='round';
+  fctx.lineTo(p.x,p.y); fctx.stroke(); fctx.beginPath(); fctx.moveTo(p.x,p.y); e.preventDefault(); }
+function fEndDraw(){ fDrawing=false; fCur=null; }
+function resetFInk(){ fStrokes=[]; fCur=null; fT0=0; }
+fcanvas.addEventListener('pointerdown',fStartDraw); fcanvas.addEventListener('pointermove',fMoveDraw);
+fcanvas.addEventListener('pointerup',fEndDraw); fcanvas.addEventListener('pointercancel',fEndDraw); fcanvas.addEventListener('pointerleave',fEndDraw);
+
+function startFill(){
+  fScore=0; fTotal=0;
+  fQueue=shuffle(NOUNS.slice()).slice(0,ROUNDS);
+  document.getElementById('fresult').style.display='none';
+  ['femoji','fblank','ffeedback','fscore'].forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('fbox').style.display='block';
+  document.getElementById('fhear').style.display='inline-flex';
+  document.getElementById('fstart').style.display='none';
+  document.getElementById('fstart').innerHTML='<span class="ic">🔄</span> Jugar otra vez';
+  sizeFCanvas(); nextFill();
+}
+function nextFill(){
+  fAttempt=1;
+  fItem=fQueue.shift()||NOUNS[Math.floor(Math.random()*NOUNS.length)];
+  document.getElementById('femoji').textContent=fItem.e;
+  document.getElementById('fblank').innerHTML='<span style="color:#c9c4e0">＿＿＿</span> '+fItem.n;
+  document.getElementById('ffeedback').innerHTML='Escribe el artículo que va antes ✍️';
+  document.getElementById('fbuttons').style.display='flex';
+  document.getElementById('fnext').style.display='none';
+  drawFGuide(); resetFInk(); updateFScore();
+  sayNoun(fItem.n);
+}
+function sayNoun(n){ return playSeq([{kind:'noun',name:n,text:n,rate:WORD_RATE}]); }
+document.getElementById('fhear').onclick=()=>{ if(fItem) sayNoun(fItem.n); };
+function showFNext(){
+  document.getElementById('fbuttons').style.display='none';
+  const b=document.getElementById('fnext');
+  b.innerHTML=(fTotal>=ROUNDS)?'<span class="ic">⭐</span> Ver mi estrella':'<span class="ic">➡️</span> Siguiente';
+  b.style.display='inline-flex';
+}
+function fAdvance(){ if(fTotal>=ROUNDS) showFillResult(); else nextFill(); }
+async function checkFill(){
+  if(!fItem || fChecking) return;
+  if(!fStrokes.length){ document.getElementById('ffeedback').innerHTML='Escribe el artículo primero ✍️'; sayUI('writeit'); return; }
+  fChecking=true; document.getElementById('ffeedback').innerHTML='Revisando tu escritura… 🔎';
+  let cands;
+  try{ cands=await recognizeHandwriting(fStrokes, fcanvas.clientWidth, fcanvas.clientHeight); }
+  catch(e){ fChecking=false; document.getElementById('ffeedback').innerHTML='No pude leerla. Intenta otra vez ✍️'; sayUI('couldnt'); return; }
+  fChecking=false;
+  const valid=VALID[fItem.g];                       // any matching article is accepted
+  const got=cands.slice(0,12).map(c=>String(c).toLowerCase().replace(/[^a-z]/g,''));
+  const hit=valid.find(a=>got.includes(a));
+  if(hit){
+    fScore++; fTotal++;
+    document.getElementById('ffeedback').innerHTML='🎉 ¡Sí! <b style="color:'+COLORHEX[hit]+'">'+hit+'</b> '+fItem.n;
+    playSeq([{kind:'ui',name:'yes'},{kind:'words',name:hit,text:hit},{kind:'noun',name:fItem.n,text:fItem.n},{kind:'ui',name:'greatjob'}]);
+    confetti(); updateFScore(); showFNext();
+  }else if(fAttempt===1){
+    fAttempt=2; drawFGuide(); resetFInk();
+    document.getElementById('ffeedback').innerHTML='Casi — ¡borra e inténtalo otra vez! ✍️';
+    playSeq([{kind:'ui',name:'tryagain'}]);
+  }else{
+    fTotal++; document.getElementById('ffeedback').innerHTML='¡Buen intento! Toca Siguiente ➡️';
+    playSeq([{kind:'ui',name:'goodtry'}]); updateFScore(); showFNext();
+  }
+}
+function showFillResult(){
+  ['femoji','fblank','fhear','fbox','fbuttons','fnext','ffeedback','fscore'].forEach(id=>document.getElementById(id).style.display='none');
+  const pct=Math.round(fScore/ROUNDS*100);
+  document.getElementById('fresult').innerHTML=starHTML('f',pct)+'<div class="resultmsg">¡Completaste <b>'+fScore+' de '+ROUNDS+'</b> bien!<br>'+praiseFor(pct)+'</div>';
+  document.getElementById('fresult').style.display='block';
+  document.getElementById('fstart').style.display='inline-flex';
+  playSeq([{kind:'ui',name:'finished'}]); confetti();
+}
+function updateFScore(){ const s=document.getElementById('fscore'); if(s) s.innerHTML='✅ '+fScore+' correctas · '+fTotal+' / '+ROUNDS; }
+
 /* ============ Trace ============ */
 const tcanvas=document.getElementById('tcanvas');
 const tctx=tcanvas.getContext('2d');
 let traceColor='var(--sh)', traceLetters='el', drawing=false;
-const COLORHEX={el:'#ff6b9d',la:'#ffa931',los:'#37c8a8',un:'#5b8def',unos:'#a06bff'};
 
 function sizeCanvas(){
   const box=tcanvas.parentElement;
@@ -838,7 +971,7 @@ tcanvas.addEventListener('pointermove',moveDraw);
 tcanvas.addEventListener('pointerup',endDraw);
 tcanvas.addEventListener('pointercancel',endDraw);
 tcanvas.addEventListener('pointerleave',endDraw);
-window.addEventListener('resize',()=>{ sizeCanvas(); sizeSpCanvas(); });
+window.addEventListener('resize',()=>{ sizeCanvas(); sizeSpCanvas(); sizeFCanvas(); });
 document.getElementById('tracesound').onclick=()=>sayDigraph(traceLetters);
 
 /* ============ Init ============ */
