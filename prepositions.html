@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Where Is It? · Place Prepositions</title>
+<style>
+  :root{
+    --in:#ff6b9d; --on:#ffa931; --under:#37c8a8; --above:#5b8def; --behind:#a06bff; --between:#ef6f6f;
+    --ink:#2b2350; --soft:#fff; --shadow:0 10px 0 rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
+  html,body{margin:0; padding:0; height:100%;}
+  body{
+    font-family:"Comic Sans MS","Chalkboard SE","Baloo 2",system-ui,-apple-system,sans-serif;
+    background:linear-gradient(160deg,#e6f7ff 0%,#eef0ff 45%,#ffe9f4 100%);
+    color:var(--ink); min-height:100%; overflow-x:hidden;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:18px 18px 80px;}
+
+  header{text-align:center; padding:14px 0 8px;}
+  h1{font-size:clamp(30px,5.6vw,58px); margin:0; line-height:1.05; text-shadow:2px 3px 0 #fff, 4px 6px 0 rgba(0,0,0,.06);}
+  .sub{font-size:clamp(16px,2.4vw,22px); margin:6px 0 0; opacity:.7; font-weight:bold;}
+  .homelink{display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--ink); font-weight:900; background:#fff; border-radius:999px; padding:8px 16px; box-shadow:var(--shadow); font-size:15px;}
+  .homelink:active{transform:translateY(3px);}
+
+  .speak{border:none; cursor:pointer; border-radius:999px; background:#fff; color:var(--ink); font-family:inherit; font-weight:bold; box-shadow:var(--shadow); display:inline-flex; align-items:center; gap:8px; transition:transform .08s ease;}
+  .speak:active{transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  .speak.big{font-size:clamp(18px,2.6vw,26px); padding:16px 26px; margin:14px auto 0;}
+  .speak .ic{font-size:1.3em;}
+
+  .voicebar{display:flex; align-items:center; justify-content:center; gap:8px; margin:14px auto 0; font-weight:bold; opacity:.85; font-size:15px;}
+  .voicebar select{font-family:inherit; font-weight:bold; font-size:15px; color:var(--ink); border:none; background:#fff; border-radius:999px; padding:10px 16px; box-shadow:var(--shadow); max-width:62vw;}
+
+  /* Tabs */
+  nav.tabs{display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:18px 0 26px;}
+  .tab{border:none; cursor:pointer; font-family:inherit; font-weight:900; font-size:clamp(15px,2.8vw,24px); color:#fff;
+    min-width:clamp(92px,15vw,140px); height:clamp(72px,12vw,104px); padding:6px 10px;
+    border-radius:24px; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center;
+    transition:transform .12s ease, filter .12s ease;}
+  .tab[data-d="in"]{background:var(--in);} .tab[data-d="on"]{background:var(--on);}
+  .tab[data-d="under"]{background:var(--under);} .tab[data-d="above"]{background:var(--above);}
+  .tab[data-d="behind"]{background:var(--behind);} .tab[data-d="between"]{background:var(--between);}
+  .tab.active{transform:translateY(-6px) scale(1.06); filter:saturate(1.2); outline:5px solid #fff;}
+
+  /* Scene (cat + box positioned to show the preposition) */
+  .scene{position:relative; width:100%; margin:0 auto;}
+  .sobj{position:absolute; transform:translate(-50%,-50%); line-height:1;}
+  .scenebox{background:#f6f9ff; border-radius:26px; box-shadow:inset 0 -10px 0 rgba(91,141,239,.08); overflow:hidden;}
+
+  /* Lesson card */
+  .card{background:var(--soft); border-radius:34px; padding:26px 22px 30px; box-shadow:0 14px 0 rgba(0,0,0,.08); animation:pop .35s ease;}
+  @keyframes pop{from{transform:scale(.96); opacity:0;} to{transform:scale(1); opacity:1;}}
+  .hero{display:flex; align-items:center; justify-content:center; gap:22px; flex-wrap:wrap; text-align:center;}
+  .bigscene{width:clamp(240px,44vw,360px);}
+  .heroinfo{max-width:430px; text-align:left;}
+  .heroinfo .says{font-size:clamp(18px,2.6vw,26px); font-weight:bold; margin:0 0 4px; opacity:.8;}
+  .heroinfo .word{font-size:clamp(46px,9vw,84px); font-weight:900; margin:0; text-transform:uppercase; letter-spacing:1px;}
+  .heroinfo .sent{font-size:clamp(18px,2.6vw,24px); margin:8px 0 0; font-weight:bold;}
+
+  .sectionhead{display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; margin:8px 0 0;}
+  .sectionhead h2{font-size:clamp(22px,4vw,36px); margin:0;}
+
+  .examples{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:16px; margin-top:22px;}
+  .ex{background:#fff; border-radius:24px; padding:8px 10px 12px; text-align:center; cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.07); border:4px solid #eef1fb; transition:transform .1s ease;}
+  .ex:active{transform:translateY(5px) scale(.97);}
+  .ex .exsent{font-size:clamp(15px,2.3vw,18px); font-weight:bold; margin-top:4px;}
+  .ex .hint{font-size:12px; opacity:.5; font-weight:bold;}
+
+  /* Trace */
+  .trace{margin-top:40px; background:#fff; border-radius:34px; padding:26px 22px 30px; box-shadow:0 14px 0 rgba(0,0,0,.08); text-align:center;}
+  .trace h2{font-size:clamp(24px,4.4vw,38px); margin:0 0 4px;}
+  .tracebox{position:relative; width:100%; max-width:760px; margin:16px auto 0; border-radius:24px; overflow:hidden; border:5px dashed #d9e2fb; background:#fbfcff;}
+  .tracebox canvas{display:block; width:100%; touch-action:none;}
+  .tracetools{display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:16px;}
+
+  /* Games */
+  .quiz{margin-top:40px; background:linear-gradient(135deg,#fff,#eef4ff); border-radius:34px; padding:26px 22px 32px; box-shadow:0 14px 0 rgba(0,0,0,.08); text-align:center;}
+  .quiz h2{font-size:clamp(24px,4.4vw,38px); margin:0 0 4px;}
+  .quizq{font-size:clamp(20px,3vw,28px); font-weight:bold; margin:14px 0 4px; min-height:1.4em;}
+  .quizemoji{margin:6px auto;}
+  .qchoices{display:flex; flex-wrap:wrap; justify-content:center; gap:16px; margin-top:8px;}
+  .qchoice{background:#fff; border:5px solid #eef1fb; border-radius:24px; padding:8px 8px 10px; width:clamp(140px,30vw,210px); cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.07); transition:transform .1s ease; font-family:inherit;}
+  .qchoice:active{transform:translateY(5px) scale(.97);}
+  .qchoice .label{font-size:clamp(22px,3.6vw,30px); font-weight:900; margin-top:4px; text-transform:uppercase; letter-spacing:.5px;}
+  .qchoice.right{border-color:var(--under); animation:correct .6s ease;}
+  .qchoice.wrong{border-color:#ff5a72; animation:shake .4s ease; opacity:.6;}
+  .qchoice.reveal-correct{border-color:var(--under); box-shadow:0 8px 0 rgba(55,200,168,.25);}
+  @keyframes correct{0%,100%{transform:scale(1);}40%{transform:scale(1.18);}}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+  .score{font-size:clamp(18px,2.6vw,24px); font-weight:bold; margin-top:16px;}
+  .spellfeedback{font-size:clamp(20px,3.2vw,30px); font-weight:900; min-height:1.4em; margin:10px 0 4px;}
+  #spbox{max-width:none; width:100%;}
+
+  .starwrap{text-align:center; animation:pop .5s ease;}
+  .bigstar{width:clamp(150px,42vw,240px); height:auto; filter:drop-shadow(0 8px 6px rgba(224,168,0,.25));}
+  .starpct{font-size:clamp(28px,5vw,40px); font-weight:900; color:#E0A800; margin-top:2px;}
+  .resultmsg{font-size:clamp(20px,3.2vw,28px); font-weight:900; margin:8px 0 4px;}
+
+  footer{text-align:center; margin-top:40px; opacity:.5; font-size:14px; font-weight:bold;}
+  .confetti{position:fixed; top:-20px; font-size:26px; pointer-events:none; z-index:50; animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg); opacity:.9;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a href="index.html" class="homelink">⬅ Home</a>
+    <h1 style="margin-top:8px">📍 Where Is It?</h1>
+    <p class="sub">Place prepositions · in · on · under · above · behind · between</p>
+    <button class="speak big" onclick="sayUI('welcome')"><span class="ic">🔊</span> Listen to instructions</button>
+    <div class="voicebar">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="netVoice" checked style="width:20px;height:20px"> 🌟 Natural voice
+      </label>
+      <span style="opacity:.4">·</span><span>🗣️</span>
+      <select id="voicePick" aria-label="Choose a device voice"></select>
+      <span id="voiceNote" style="opacity:.7;font-size:13px"></span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs" style="margin-top:10px"></nav>
+
+  <section class="card" id="lesson"></section>
+
+  <section class="trace" id="trace">
+    <div class="sectionhead">
+      <h2>✏️ Trace the Word</h2>
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('tracehow')"><span class="ic">🔊</span> Listen</button>
+    </div>
+    <div class="tracebox"><canvas id="tcanvas"></canvas></div>
+    <div class="tracetools">
+      <button class="speak" style="padding:12px 20px;font-size:18px" onclick="clearTrace()"><span class="ic">🧽</span> Clear</button>
+      <button class="speak" style="padding:12px 20px;font-size:18px" id="tracesound"><span class="ic">🔊</span> Say the word</button>
+    </div>
+  </section>
+
+  <!-- Listening game -->
+  <section class="quiz" id="quiz">
+    <h2>🌟 Listening Game</h2>
+    <div class="sectionhead" style="margin-top:6px">
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('quizhow')"><span class="ic">🔊</span> How to play</button>
+    </div>
+    <div class="quizq" id="qword">Press START to play!</div>
+    <button class="speak" id="qreplay" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the sentence</button>
+    <div class="qchoices" id="qchoices"></div>
+    <button class="speak big" id="qnext" style="display:none" onclick="qAdvance()"><span class="ic">➡️</span> Next</button>
+    <div id="qresult" style="display:none"></div>
+    <div class="score" id="qscore"></div>
+    <button class="speak big" id="qstart" onclick="startQuiz()"><span class="ic">▶️</span> START</button>
+  </section>
+
+  <!-- Writing game -->
+  <section class="quiz" id="spell">
+    <h2>✍️ Write the Word</h2>
+    <div class="sectionhead" style="margin-top:6px">
+      <button class="speak" style="padding:12px 18px;font-size:18px" onclick="sayUI('spellhow')"><span class="ic">🔊</span> How to play</button>
+    </div>
+    <div class="quizemoji" id="spemoji"></div>
+    <button class="speak" id="sphear" style="display:none;padding:12px 22px;font-size:18px;margin:0 auto 10px"><span class="ic">🔊</span> Hear the sentence</button>
+    <div class="tracebox" id="spbox" style="display:none"><canvas id="spcanvas"></canvas></div>
+    <div class="spellfeedback" id="spfeedback"></div>
+    <div class="choices" id="spbuttons" style="display:none">
+      <button class="speak big" style="padding:16px 30px" onclick="checkSpell()"><span class="ic">🔎</span> Check</button>
+    </div>
+    <div id="spresult" style="display:none"></div>
+    <div class="score" id="spscore"></div>
+    <button class="speak big" id="spstart" onclick="startSpell()"><span class="ic">▶️</span> START</button>
+  </section>
+
+  <footer>Made with ❤️ for a smart reader · in · on · under · above · behind · between</footer>
+</div>
+
+<script>
+/* ============ Data ============ */
+const PREPS = {
+  in:     { sentence:'The cat is in the box.',        examples:[['🐱','📦'],['🐶','🏠'],['🍎','🧺']] },
+  on:     { sentence:'The cat is on the box.',        examples:[['🐱','📦'],['🐦','🌳'],['🍰','🍽️']] },
+  under:  { sentence:'The cat is under the box.',     examples:[['🐱','📦'],['🐶','🪑'],['⚽','🌳']] },
+  above:  { sentence:'The cat is above the box.',     examples:[['🐱','📦'],['☀️','🏠'],['☁️','⛰️']] },
+  behind: { sentence:'The cat is behind the box.',    examples:[['🐱','📦'],['🐶','🌳'],['☀️','☁️']] },
+  between:{ sentence:'The cat is between the boxes.',  examples:[['🐱','📦'],['🧒','🌳'],['🍎','🍌']] }
+};
+const ORDER = ['in','on','under','above','behind','between'];
+const COLORHEX = {in:'#ff6b9d',on:'#ffa931',under:'#37c8a8',above:'#5b8def',behind:'#a06bff',between:'#ef6f6f'};
+
+/* Scene layout: where the OBJECT sits relative to the REFERENCE, per preposition. [left%, top%, sizePx, z] */
+const CFG = {
+  in:     { obj:[50,49,40,2], ref:[[50,57,76,1]] },
+  on:     { obj:[50,33,52,2], ref:[[50,66,76,1]] },
+  under:  { obj:[50,77,52,2], ref:[[50,40,76,1]] },
+  above:  { obj:[50,22,52,2], ref:[[50,75,76,1]] },
+  behind: { obj:[61,38,50,1], ref:[[50,60,82,2]] },
+  between:{ obj:[50,55,50,2], ref:[[25,58,62,1],[75,58,62,1]] }
+};
+function sob(e,a,scale){ return '<span class="sobj" style="left:'+a[0]+'%;top:'+a[1]+'%;font-size:'+Math.round(a[2]*scale)+'px;z-index:'+a[3]+'">'+e+'</span>'; }
+function sceneHTML(p, obj, ref, h, scale){
+  obj=obj||'🐱'; ref=ref||'📦'; h=h||150; scale=scale||1;
+  const c=CFG[p];
+  let s='<div class="scene scenebox" style="height:'+h+'px">';
+  c.ref.forEach(r=> s+=sob(ref,r,scale));
+  s+=sob(obj,c.obj,scale);
+  return s+'</div>';
+}
+function boldSentence(p){ const re=new RegExp('\\b('+p+')\\b','i'); return PREPS[p].sentence.replace(re,'<b style="color:'+COLORHEX[p]+'">$1</b>'); }
+
+/* ============ Speech (same engine as Digraphs, base = audio/prep/) ============ */
+let enVoice=null, enVoices=[];
+function scoreVoice(v){
+  const n=(v.name||'').toLowerCase(); let s=0;
+  if(!/^en/i.test(v.lang)) return -1;
+  if(/en[-_]us/i.test(v.lang)) s+=8; else if(/en[-_]gb/i.test(v.lang)) s+=6; else s+=3;
+  if(/enhanced|premium|neural|natural/.test(n)) s+=40;
+  if(/siri/.test(n)) s+=35; if(/google/.test(n)) s+=25;
+  if(/microsoft/.test(n)&&/natural|online/.test(n)) s+=30;
+  if(/samantha|ava|allison|susan|nicky|karen|zoe|serena|moira|tessa|aaron/.test(n)) s+=18;
+  if(/daniel|arthur|oliver|tom|alex/.test(n)) s+=12;
+  if(/fred|albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|hysterical|jester|organ|superstar|trinoids|whisper|wobble|zarvox|eloquence|compact|grandma|grandpa|reed|rocko|sandy|shelley|flo|eddy/.test(n)) s-=50;
+  if(v.localService===false) s+=4; return s;
+}
+function refreshVoices(saved){
+  const vs=speechSynthesis.getVoices();
+  enVoices=vs.filter(v=>/^en/i.test(v.lang)).sort((a,b)=>scoreVoice(b)-scoreVoice(a));
+  const stored=saved||localStorage.getItem('voiceURI');
+  enVoice=(stored&&enVoices.find(v=>v.voiceURI===stored))||enVoices[0]||vs[0]||null;
+  buildVoicePicker();
+}
+function buildVoicePicker(){
+  const sel=document.getElementById('voicePick'); if(!sel||!enVoices.length) return;
+  sel.innerHTML='';
+  enVoices.forEach(v=>{ const o=document.createElement('option'); o.value=v.voiceURI;
+    let tag=/enhanced|premium|neural|natural|siri/i.test(v.name)?' ⭐':'';
+    o.textContent=v.name.replace(/\s*\(.*?\)/,'')+' ('+v.lang+')'+tag;
+    if(enVoice&&v.voiceURI===enVoice.voiceURI) o.selected=true; sel.appendChild(o); });
+  sel.onchange=()=>{ enVoice=enVoices.find(v=>v.voiceURI===sel.value)||enVoice; localStorage.setItem('voiceURI',sel.value); sayUI('hello'); };
+}
+if('speechSynthesis' in window){ refreshVoices(); speechSynthesis.onvoiceschanged=()=>refreshVoices(); }
+
+let preferNat=(localStorage.getItem('preferNat')!=='0'), natOK=true, sessionId=0;
+const uaudio=new Audio(); uaudio.preload='auto';
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const WORD_RATE=0.86, UI_RATE=0.9;
+function stopAll(){ try{speechSynthesis.cancel();}catch(e){} try{uaudio.onended=null;uaudio.onerror=null;uaudio.pause();}catch(e){} }
+function newSession(){ stopAll(); return ++sessionId; }
+function clipSrc(kind,name){ return 'audio/prep/'+kind+'/'+name+'.mp3'; }
+function playClip(src,rate,id){
+  return new Promise((res,rej)=>{
+    if(id!==sessionId) return res();
+    uaudio.onended=()=>res(); uaudio.onerror=()=>rej(new Error('clip'));
+    uaudio.src=src; uaudio.playbackRate=rate||1;
+    const p=uaudio.play(); if(p&&p.catch) p.catch(()=>rej(new Error('block')));
+  });
+}
+function synthSay(text,rate,id){
+  return new Promise(res=>{
+    if(!('speechSynthesis'in window)||id!==sessionId||!text) return res();
+    const u=new SpeechSynthesisUtterance(text); u.lang=enVoice?enVoice.lang:'en-US'; u.rate=rate*0.95; u.pitch=1.0;
+    if(enVoice) u.voice=enVoice; u.onend=res; u.onerror=res; speechSynthesis.speak(u);
+  });
+}
+async function playSeq(items){
+  const id=newSession();
+  for(const it of items){
+    if(id!==sessionId) return;
+    const rate=it.rate||WORD_RATE;
+    if(preferNat&&natOK&&it.name){
+      try{ await playClip(clipSrc(it.kind,it.name),rate,id); continue; }
+      catch(e){ if(e&&e.message==='clip'){ natOK=false; updateVoiceUI(); } }
+    }
+    await synthSay(it.text!=null?it.text:it.name, rate, id);
+  }
+}
+function sayWord(p){ return playSeq([{kind:'words',name:p,text:p,rate:WORD_RATE}]); }
+function sayPrep(p){ return playSeq([{kind:'say',name:p,text:PREPS[p].sentence,rate:UI_RATE}]); }
+function sayUI(key,text){ return playSeq([{kind:'ui',name:key,text:text||'',rate:UI_RATE}]); }
+function say(text){ return synthSay(text, UI_RATE, newSession()); }
+async function repeatSay(p, times=2, gap=1000){
+  const id=newSession();
+  for(let i=0;i<times;i++){
+    if(id!==sessionId) return;
+    if(preferNat&&natOK){
+      try{ await playClip(clipSrc('say',p),UI_RATE,id); }
+      catch(e){ if(e&&e.message==='clip'){ natOK=false; updateVoiceUI(); } await synthSay(PREPS[p].sentence,UI_RATE,id); }
+    } else { await synthSay(PREPS[p].sentence,UI_RATE,id); }
+    if(i<times-1){ if(id!==sessionId) return; await wait(gap); }
+  }
+}
+function updateVoiceUI(){
+  const cb=document.getElementById('netVoice'), note=document.getElementById('voiceNote');
+  if(cb){ cb.checked=preferNat&&natOK; cb.disabled=!natOK; }
+  if(note){ note.textContent=natOK?'':'(natural voice unavailable — using device voice)'; }
+}
+function initNetToggle(){
+  const cb=document.getElementById('netVoice'); if(!cb) return;
+  cb.checked=preferNat&&natOK;
+  cb.onchange=()=>{ preferNat=cb.checked; localStorage.setItem('preferNat',preferNat?'1':'0'); sayUI('hello'); };
+}
+
+/* ============ Tabs + Lesson ============ */
+let currentPrep='in', traceWord='in';
+const tabsEl=document.getElementById('tabs');
+ORDER.forEach(p=>{
+  const b=document.createElement('button'); b.className='tab'; b.dataset.d=p;
+  b.textContent=p.toUpperCase();
+  b.onclick=()=>{ selectTab(p); sayPrep(p); };
+  tabsEl.appendChild(b);
+});
+const lessonEl=document.getElementById('lesson');
+function selectTab(p){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.d===p));
+  currentPrep=p; traceWord=p;
+  if(typeof drawGuide==='function') drawGuide();
+  const ex=PREPS[p].examples.map(([o,r])=>{
+    return '<div class="ex" onclick="sayWord(\''+p+'\')">'+
+      sceneHTML(p,o,r,120,0.62)+
+      '<div class="hint">tap to hear 🔊</div></div>';
+  }).join('');
+  lessonEl.innerHTML =
+    '<div class="hero">'+
+      '<div class="bigscene">'+sceneHTML(p,'🐱','📦',200,1.25)+'</div>'+
+      '<div class="heroinfo">'+
+        '<p class="says">Where is the cat? 🐱</p>'+
+        '<p class="word" style="color:'+COLORHEX[p]+'">'+p+'</p>'+
+        '<p class="sent">'+boldSentence(p)+'</p>'+
+        '<button class="speak" style="margin-top:10px" onclick="sayPrep(\''+p+'\')"><span class="ic">🔊</span> Hear it</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="sectionhead" style="margin-top:22px"><h2 style="color:'+COLORHEX[p]+'">More pictures with “'+p+'”</h2></div>'+
+    '<div class="examples">'+ex+'</div>';
+}
+
+/* ============ Shared helpers ============ */
+const ROUNDS=15;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function starHTML(idp,pct){
+  const fill=Math.max(0,Math.min(100,Math.round(pct))), gid=idp+'-star-grad';
+  return '<div class="starwrap"><svg viewBox="0 0 100 100" class="bigstar" role="img" aria-label="'+fill+' percent">'+
+    '<defs><linearGradient id="'+gid+'" x1="0" y1="1" x2="0" y2="0">'+
+      '<stop offset="0%" stop-color="#FFD43B"/><stop offset="'+fill+'%" stop-color="#FFD43B"/>'+
+      '<stop offset="'+fill+'%" stop-color="#ece8f7"/><stop offset="100%" stop-color="#ece8f7"/>'+
+    '</linearGradient></defs>'+
+    '<path d="M50 6 L61.8 38.2 L96 38.8 L68.5 59.6 L78.6 92.5 L50 72.6 L21.4 92.5 L31.5 59.6 L4 38.8 L38.2 38.2 Z" fill="url(#'+gid+')" stroke="#E0A800" stroke-width="3.5" stroke-linejoin="round"/>'+
+    '</svg><div class="starpct">'+fill+'%</div></div>';
+}
+function praiseFor(p){ return p>=90?'Amazing! 🌟':(p>=70?'Great job! ⭐':(p>=50?'Good work! 👍':'Keep practicing! 💪')); }
+function confetti(){
+  const em=['🎉','⭐','🎈','✨','🌟','🥳'];
+  for(let i=0;i<18;i++){ const c=document.createElement('div'); c.className='confetti'; c.textContent=em[Math.floor(Math.random()*em.length)];
+    c.style.left=Math.random()*100+'vw'; c.style.animationDuration=(1.5+Math.random()*1.5)+'s';
+    document.body.appendChild(c); setTimeout(()=>c.remove(),3200); }
+}
+
+/* ============ Listening game (distinguish prepositions) ============ */
+let qScore=0,qTotal=0,qAnswer=null,qItem=null,qAnswered=false,qTimer=null,quizStarted=false;
+function startQuiz(){
+  quizStarted=true; qScore=0; qTotal=0;
+  document.getElementById('qresult').style.display='none';
+  ['qword','qscore'].forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('qstart').innerHTML='<span class="ic">🔄</span> Play again';
+  nextQuestion();
+}
+function qAdvance(){ if(qTotal>=ROUNDS) showQuizResult(); else nextQuestion(); }
+function showQuizResult(){
+  ['qword','qreplay','qchoices','qnext','qscore'].forEach(id=>document.getElementById(id).style.display='none');
+  const pct=Math.round(qScore/ROUNDS*100);
+  document.getElementById('qresult').innerHTML=starHTML('q',pct)+'<div class="resultmsg">You got <b>'+qScore+' / '+ROUNDS+'</b> right!<br>'+praiseFor(pct)+'</div>';
+  document.getElementById('qresult').style.display='block';
+  document.getElementById('qstart').style.display='inline-flex';
+  playSeq([{kind:'ui',name:'finished',rate:UI_RATE}]); confetti();
+}
+function nextQuestion(silent){
+  qAnswered=false;
+  const target=ORDER[Math.floor(Math.random()*ORDER.length)];
+  qItem=target; qAnswer=target;
+  document.getElementById('qword').textContent='Listen and tap the picture 👂';
+  document.getElementById('qreplay').style.display='inline-flex';
+  document.getElementById('qnext').style.display='none';
+  const others=shuffle(ORDER.filter(x=>x!==target)).slice(0,2);
+  const opts=shuffle([target,...others]);
+  const ch=document.getElementById('qchoices'); ch.innerHTML='';
+  opts.forEach(p=>{
+    const b=document.createElement('button'); b.className='qchoice'; b.dataset.w=p;
+    b.innerHTML=sceneHTML(p,'🐱','📦',118,0.62)+'<div class="label" style="color:'+COLORHEX[p]+'">'+p+'</div>';
+    b.onclick=()=>answer(b,p);
+    ch.appendChild(b);
+  });
+  updateScore();
+  if(qTimer){ clearTimeout(qTimer); qTimer=null; }
+  if(!silent){ sayUI('listen'); qTimer=setTimeout(()=>repeatSay(target,2,1150),1000); }
+}
+function answer(btn,p){
+  if(qAnswered) return;
+  qAnswered=true; qTotal++;
+  if(qTimer){ clearTimeout(qTimer); qTimer=null; }
+  stopAll();
+  document.querySelectorAll('#qchoices .qchoice').forEach(b=>b.style.pointerEvents='none');
+  if(p===qAnswer){
+    btn.classList.add('right'); qScore++;
+    playSeq([{kind:'ui',name:'yes',rate:UI_RATE},{kind:'words',name:qAnswer,text:qAnswer,rate:WORD_RATE},{kind:'ui',name:'greatjob',rate:UI_RATE}]);
+    confetti();
+  }else{
+    btn.classList.add('wrong');
+    document.querySelectorAll('#qchoices .qchoice').forEach(b=>{ if(b.dataset.w===qAnswer) b.classList.add('reveal-correct'); });
+    playSeq([{kind:'ui',name:'almost',rate:UI_RATE},{kind:'words',name:qAnswer,text:qAnswer,rate:WORD_RATE}]);
+  }
+  const nx=document.getElementById('qnext');
+  nx.innerHTML=(qTotal>=ROUNDS)?'<span class="ic">⭐</span> See my star':'<span class="ic">➡️</span> Next';
+  nx.style.display='inline-flex';
+  updateScore();
+}
+document.getElementById('qreplay').onclick=()=>{ if(qItem) repeatSay(qItem,2,1150); };
+function updateScore(){ const s=document.getElementById('qscore'); s.innerHTML=qTotal?('✅ '+qScore+' correct · '+qTotal+' / '+ROUNDS+' done'):''; }
+
+/* ============ Writing game ============ */
+const spcanvas=document.getElementById('spcanvas'), spctx=spcanvas.getContext('2d');
+let spDrawing=false, spItem=null, spAttempt=1, spScore=0, spTotal=0, spChecking=false;
+let spStrokes=[], spCur=null, spT0=0;
+function sizeSpCanvas(){
+  const box=document.getElementById('spbox'); if(box.style.display==='none') return;
+  const w=box.clientWidth, h=Math.max(170, Math.min(Math.round(w*0.30), 340));
+  const dpr=window.devicePixelRatio||1;
+  spcanvas.width=w*dpr; spcanvas.height=h*dpr; spcanvas.style.height=h+'px';
+  spctx.setTransform(dpr,0,0,dpr,0,0); drawSpGuide();
+}
+function drawSpGuide(){
+  const w=spcanvas.clientWidth, h=spcanvas.clientHeight;
+  spctx.clearRect(0,0,w,h); spctx.save();
+  spctx.strokeStyle='#e7edfb'; spctx.lineWidth=2;
+  spctx.beginPath(); spctx.moveTo(0,h*0.28); spctx.lineTo(w,h*0.28); spctx.stroke();
+  spctx.beginPath(); spctx.moveTo(0,h*0.82); spctx.lineTo(w,h*0.82); spctx.stroke();
+  spctx.strokeStyle='#dbe3fb'; spctx.setLineDash([8,10]);
+  spctx.beginPath(); spctx.moveTo(0,h*0.55); spctx.lineTo(w,h*0.55); spctx.stroke();
+  spctx.restore();
+}
+function spPos(e){ const r=spcanvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+function spStart(e){ spDrawing=true; const p=spPos(e); if(!spStrokes.length) spT0=performance.now(); spCur=[{x:p.x,y:p.y,t:performance.now()-spT0}]; spStrokes.push(spCur); spctx.beginPath(); spctx.moveTo(p.x,p.y); e.preventDefault(); }
+function spMove(e){ if(!spDrawing) return; const p=spPos(e); if(spCur) spCur.push({x:p.x,y:p.y,t:performance.now()-spT0});
+  spctx.strokeStyle=(spItem&&COLORHEX[spItem.w])||'#5b8def'; spctx.lineWidth=12; spctx.lineCap='round'; spctx.lineJoin='round';
+  spctx.lineTo(p.x,p.y); spctx.stroke(); spctx.beginPath(); spctx.moveTo(p.x,p.y); e.preventDefault(); }
+function spEnd(){ spDrawing=false; spCur=null; }
+function resetInk(){ spStrokes=[]; spCur=null; spT0=0; }
+spcanvas.addEventListener('pointerdown',spStart); spcanvas.addEventListener('pointermove',spMove);
+spcanvas.addEventListener('pointerup',spEnd); spcanvas.addEventListener('pointercancel',spEnd); spcanvas.addEventListener('pointerleave',spEnd);
+
+function startSpell(){
+  spScore=0; spTotal=0;
+  document.getElementById('spresult').style.display='none';
+  ['spemoji','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('spbox').style.display='block';
+  document.getElementById('spbuttons').style.display='flex';
+  document.getElementById('sphear').style.display='inline-flex';
+  document.getElementById('spstart').style.display='none';
+  document.getElementById('spstart').innerHTML='<span class="ic">🔄</span> Play again';
+  sizeSpCanvas(); nextSpell();
+}
+function nextSpell(){
+  spAttempt=1;
+  const target=ORDER[Math.floor(Math.random()*ORDER.length)];
+  spItem={w:target};
+  document.getElementById('spemoji').innerHTML='<div style="width:clamp(220px,42vw,300px);margin:0 auto">'+sceneHTML(target,'🐱','📦',150,0.95)+'</div>';
+  document.getElementById('spfeedback').innerHTML='Listen and write the word ✍️';
+  drawSpGuide(); resetInk(); updateSpScore();
+  repeatSay(target,2,1150);
+}
+document.getElementById('sphear').onclick=()=>{ if(spItem) repeatSay(spItem.w,2,1150); };
+function spFeedback(h){ document.getElementById('spfeedback').innerHTML=h; }
+function wordBig(w){ return '<span style="font-size:1.3em;font-weight:900;color:'+COLORHEX[w]+'">'+w+'</span>'; }
+
+async function recognizeHandwriting(strokes,w,h){
+  const ink=strokes.filter(s=>s.length).map(s=>{ const xs=[],ys=[],ts=[]; s.forEach(p=>{xs.push(Math.round(p.x));ys.push(Math.round(p.y));ts.push(Math.round(p.t));}); return [xs,ys,ts]; });
+  const body={ options:"enable_pre_space", requests:[{ writing_guide:{writing_area_width:Math.round(w),writing_area_height:Math.round(h)}, ink:ink, language:"en" }] };
+  const res=await fetch('https://inputtools.google.com/request?ime=handwriting&app=mobile&dbg=1&cs=1&oe=UTF-8',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const data=await res.json();
+  if(data[0]!=='SUCCESS'||!data[1]||!data[1][0]) throw new Error('no-result');
+  return data[1][0][1]||[];
+}
+async function checkSpell(){
+  if(!spItem||spChecking) return;
+  if(!spStrokes.length){ spFeedback('Write the word first ✍️'); sayUI('writeit'); return; }
+  spChecking=true; spFeedback('Checking your writing… 🔎');
+  let cands;
+  try{ cands=await recognizeHandwriting(spStrokes,spcanvas.clientWidth,spcanvas.clientHeight); }
+  catch(e){ spChecking=false; spFeedback('Hmm, I could not read it. Try again ✍️'); sayUI('couldnt'); return; }
+  spChecking=false;
+  const target=spItem.w.toLowerCase();
+  const got=cands.slice(0,12).map(c=>String(c).toLowerCase().replace(/[^a-z]/g,''));
+  const correct=got.includes(target);
+  if(correct){
+    spScore++; spTotal++;
+    spFeedback('🎉 Yes! '+wordBig(spItem.w));
+    playSeq([{kind:'ui',name:'yes',rate:UI_RATE},{kind:'words',name:target,text:spItem.w,rate:WORD_RATE},{kind:'ui',name:'greatjob',rate:UI_RATE}]);
+    confetti(); updateSpScore(); setTimeout(advanceSpell,1700);
+  }else if(spAttempt===1){
+    spAttempt=2; drawSpGuide(); resetInk();
+    spFeedback('Not quite — let’s clean and try again! ✍️');
+    playSeq([{kind:'ui',name:'tryagain',rate:UI_RATE}]);
+    setTimeout(()=>{ if(spItem) repeatSay(spItem.w,2,1150); },1500);
+  }else{
+    spTotal++; spFeedback('Good try! Here is the next one ➡️');
+    playSeq([{kind:'ui',name:'goodtry',rate:UI_RATE}]); updateSpScore(); setTimeout(advanceSpell,1700);
+  }
+}
+function advanceSpell(){ if(spTotal>=ROUNDS) showSpellResult(); else nextSpell(); }
+function showSpellResult(){
+  ['spemoji','sphear','spbox','spbuttons','spfeedback','spscore'].forEach(id=>document.getElementById(id).style.display='none');
+  const pct=Math.round(spScore/ROUNDS*100);
+  document.getElementById('spresult').innerHTML=starHTML('sp',pct)+'<div class="resultmsg">You wrote <b>'+spScore+' / '+ROUNDS+'</b> correctly!<br>'+praiseFor(pct)+'</div>';
+  document.getElementById('spresult').style.display='block';
+  document.getElementById('spstart').style.display='inline-flex';
+  playSeq([{kind:'ui',name:'finished',rate:UI_RATE}]); confetti();
+}
+function updateSpScore(){ const s=document.getElementById('spscore'); if(s) s.innerHTML='✅ '+spScore+' correct · '+spTotal+' / '+ROUNDS+' done'; }
+
+/* ============ Trace ============ */
+const tcanvas=document.getElementById('tcanvas'), tctx=tcanvas.getContext('2d');
+let drawing=false;
+function sizeCanvas(){
+  const box=tcanvas.parentElement; const w=box.clientWidth, h=Math.round(w*0.34);
+  const dpr=window.devicePixelRatio||1; const prev=tcanvas.toDataURL();
+  tcanvas.width=w*dpr; tcanvas.height=h*dpr; tcanvas.style.height=h+'px';
+  tctx.setTransform(dpr,0,0,dpr,0,0); drawGuide();
+  if(prev&&tcanvas.width>0){ const img=new Image(); img.onload=()=>tctx.drawImage(img,0,0,w,h); img.src=prev; }
+}
+function drawGuide(){
+  const w=tcanvas.clientWidth, h=tcanvas.clientHeight;
+  tctx.clearRect(0,0,w,h);
+  tctx.save(); tctx.strokeStyle='#e7edfb'; tctx.lineWidth=2; tctx.setLineDash([10,10]);
+  tctx.beginPath(); tctx.moveTo(0,h/2); tctx.lineTo(w,h/2); tctx.stroke(); tctx.restore();
+  tctx.save(); tctx.fillStyle='rgba(120,110,160,.16)';
+  const word=traceWord.toUpperCase(); let fs=Math.round(h*0.62);
+  tctx.font='900 '+fs+'px "Comic Sans MS","Chalkboard SE",sans-serif';
+  while(tctx.measureText(word).width>w*0.9 && fs>12){ fs-=2; tctx.font='900 '+fs+'px "Comic Sans MS","Chalkboard SE",sans-serif'; }
+  tctx.textAlign='center'; tctx.textBaseline='middle';
+  tctx.fillText(word, w/2, h/2+h*0.02); tctx.restore();
+}
+function clearTrace(){ drawGuide(); }
+function tPos(e){ const r=tcanvas.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+function startDraw(e){ drawing=true; const p=tPos(e); tctx.beginPath(); tctx.moveTo(p.x,p.y); e.preventDefault(); }
+function moveDraw(e){ if(!drawing) return; const p=tPos(e); tctx.strokeStyle=COLORHEX[traceWord]||'#5b8def'; tctx.lineWidth=14; tctx.lineCap='round'; tctx.lineJoin='round'; tctx.lineTo(p.x,p.y); tctx.stroke(); tctx.beginPath(); tctx.moveTo(p.x,p.y); e.preventDefault(); }
+function endDraw(){ drawing=false; }
+tcanvas.addEventListener('pointerdown',startDraw); tcanvas.addEventListener('pointermove',moveDraw);
+tcanvas.addEventListener('pointerup',endDraw); tcanvas.addEventListener('pointercancel',endDraw); tcanvas.addEventListener('pointerleave',endDraw);
+window.addEventListener('resize',()=>{ sizeCanvas(); sizeSpCanvas(); });
+document.getElementById('tracesound').onclick=()=>sayWord(traceWord);
+
+/* ============ Init ============ */
+initNetToggle(); updateVoiceUI(); selectTab('in'); sizeCanvas();
+document.body.addEventListener('touchstart',function prime(){
+  if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }
+  document.body.removeEventListener('touchstart',prime);
+},{once:true});
+</script>
+</body>
+</html>
