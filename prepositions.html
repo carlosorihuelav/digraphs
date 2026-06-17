@@ -180,12 +180,12 @@
 <script>
 /* ============ Data ============ */
 const PREPS = {
-  in:     { sentence:'The cat is in the box.',        examples:[['🐱','📦'],['🐶','🏠'],['🍎','🧺']] },
-  on:     { sentence:'The cat is on the box.',        examples:[['🐱','📦'],['🐦','🌳'],['🍰','🍽️']] },
-  under:  { sentence:'The cat is under the box.',     examples:[['🐱','📦'],['🐶','🪑'],['⚽','🌳']] },
-  above:  { sentence:'The cat is above the box.',     examples:[['🐱','📦'],['☀️','🏠'],['☁️','⛰️']] },
-  behind: { sentence:'The cat is behind the box.',    examples:[['🐱','📦'],['🐶','🌳'],['☀️','☁️']] },
-  between:{ sentence:'The cat is between the boxes.',  examples:[['🐱','📦'],['🧒','🌳'],['🍎','🍌']] }
+  in:     { sentence:'The cat is in the box.',       examples:[['🐱','📦','The cat is in the box.'],['🐶','🏠','The dog is in the house.'],['🍎','🧺','The apple is in the basket.']] },
+  on:     { sentence:'The cat is on the box.',       examples:[['🐱','📦','The cat is on the box.'],['🐦','🌳','The bird is on the tree.'],['🍰','🍽️','The cake is on the plate.']] },
+  under:  { sentence:'The cat is under the box.',    examples:[['🐱','📦','The cat is under the box.'],['🐶','🪑','The dog is under the chair.'],['⚽','🌳','The ball is under the tree.']] },
+  above:  { sentence:'The cat is above the box.',    examples:[['🐱','📦','The cat is above the box.'],['☀️','🏠','The sun is above the house.'],['☁️','⛰️','The cloud is above the mountain.']] },
+  behind: { sentence:'The cat is behind the box.',   examples:[['🐱','📦','The cat is behind the box.'],['🐶','🌳','The dog is behind the tree.'],['☀️','☁️','The sun is behind the cloud.']] },
+  between:{ sentence:'The cat is between the boxes.', examples:[['🐱','📦','The cat is between the boxes.'],['🧒','🌳','The kid is between the trees.'],['🍎','🍌','The apple is between the bananas.']] }
 };
 const ORDER = ['in','on','under','above','behind','between'];
 const COLORHEX = {in:'#ff6b9d',on:'#ffa931',under:'#37c8a8',above:'#5b8def',behind:'#a06bff',between:'#ef6f6f'};
@@ -208,7 +208,9 @@ function sceneHTML(p, obj, ref, h, scale){
   s+=sob(obj,c.obj,scale);
   return s+'</div>';
 }
-function boldSentence(p){ const re=new RegExp('\\b('+p+')\\b','i'); return PREPS[p].sentence.replace(re,'<b style="color:'+COLORHEX[p]+'">$1</b>'); }
+function boldWord(text,p){ const re=new RegExp('\\b('+p+')\\b','i'); return text.replace(re,'<b style="color:'+COLORHEX[p]+'">$1</b>'); }
+function boldSentence(p){ return boldWord(PREPS[p].sentence, p); }
+function playExample(p,i){ return playSeq([{kind:'ex', name:p+i, text:PREPS[p].examples[i][2], rate:UI_RATE}]); }
 
 /* ============ Speech (same engine as Digraphs, base = audio/prep/) ============ */
 let enVoice=null, enVoices=[];
@@ -316,9 +318,10 @@ function selectTab(p){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.d===p));
   currentPrep=p; traceWord=p;
   if(typeof drawGuide==='function') drawGuide();
-  const ex=PREPS[p].examples.map(([o,r])=>{
-    return '<div class="ex" onclick="sayWord(\''+p+'\')">'+
-      sceneHTML(p,o,r,120,0.62)+
+  const ex=PREPS[p].examples.map((e,i)=>{
+    return '<div class="ex" onclick="playExample(\''+p+'\','+i+')">'+
+      sceneHTML(p,e[0],e[1],120,0.62)+
+      '<div class="exsent">'+boldWord(e[2],p)+'</div>'+
       '<div class="hint">tap to hear 🔊</div></div>';
   }).join('');
   lessonEl.innerHTML =
