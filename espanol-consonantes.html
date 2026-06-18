@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Las Consonantes · F</title>
+<style>
+  :root{ --ink:#2b2350; --shadow:0 10px 0 rgba(0,0,0,.12); --red:#e23b3b; }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
+  html,body{margin:0; padding:0; height:100%;}
+  body{ font-family:"Comic Sans MS","Chalkboard SE","Baloo 2",system-ui,-apple-system,sans-serif;
+    background:linear-gradient(160deg,#fff4e6 0%,#ffe9f2 50%,#e9f0ff 100%); color:var(--ink); min-height:100%; overflow-x:hidden;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  .wrap{max-width:1000px; margin:0 auto; padding:18px 18px 80px;}
+  header{text-align:center; padding:14px 0 8px;}
+  h1{font-size:clamp(30px,5.6vw,56px); margin:0; text-shadow:2px 3px 0 #fff,4px 6px 0 rgba(0,0,0,.06);}
+  .sub{font-size:clamp(15px,2.4vw,22px); margin:6px 0 0; opacity:.7; font-weight:bold;}
+  .homelink{display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--ink); font-weight:900; background:#fff; border-radius:999px; padding:8px 16px; box-shadow:var(--shadow); font-size:15px;}
+  .homelink:active{transform:translateY(3px);}
+  .speak{border:none; cursor:pointer; border-radius:999px; background:#fff; color:var(--ink); font-family:inherit; font-weight:bold; box-shadow:var(--shadow); display:inline-flex; align-items:center; gap:8px; transition:transform .08s ease; margin:4px;}
+  .speak:active{transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.12);}
+  .speak.big{font-size:clamp(18px,2.6vw,26px); padding:16px 26px; margin:14px auto 0;}
+  .speak.sm{padding:10px 16px; font-size:16px;}
+  .speak .ic{font-size:1.3em;}
+  .voicebar{display:flex; align-items:center; justify-content:center; gap:8px; margin:14px auto 0; font-weight:bold; opacity:.85; font-size:15px;}
+  .voicebar select{font-family:inherit; font-weight:bold; font-size:15px; color:var(--ink); border:none; background:#fff; border-radius:999px; padding:10px 16px; box-shadow:var(--shadow); max-width:60vw;}
+
+  nav.tabs{display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:18px 0 4px;}
+  .tab{border:none; cursor:pointer; font-family:inherit; font-weight:900; font-size:clamp(28px,5vw,40px); color:#fff;
+    width:clamp(76px,13vw,104px); height:clamp(76px,13vw,104px); border-radius:24px; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center; transition:transform .12s ease;}
+  .tab.active{transform:translateY(-6px) scale(1.06); outline:5px solid #fff;}
+
+  .card{background:#fff; border-radius:30px; padding:22px; box-shadow:0 14px 0 rgba(0,0,0,.08); margin-top:20px;}
+  .card h2{font-size:clamp(22px,4vw,32px); margin:0 0 12px; color:var(--red); text-align:center;}
+  .card p.lead{font-size:clamp(16px,2.6vw,20px); font-weight:bold; margin:10px 0 6px; text-align:center; opacity:.85;}
+
+  .vidframe{position:relative; width:100%; max-width:620px; margin:0 auto; padding-top:56.25%; border-radius:18px; overflow:hidden;}
+  .vidframe iframe{position:absolute; inset:0; width:100%; height:100%; border:0;}
+
+  .hero{display:flex; align-items:center; justify-content:center; gap:22px; flex-wrap:wrap; text-align:center;}
+  .bigletters{font-size:clamp(70px,17vw,150px); font-weight:900; line-height:1; color:#fff; padding:10px 30px; border-radius:30px; box-shadow:var(--shadow);}
+  .heroinfo{text-align:center;}
+  .mouth{font-size:clamp(56px,12vw,90px); line-height:1; margin:4px 0 8px;}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin:12px 0;}
+  .word{background:#faf8ff; border-radius:22px; padding:14px 10px 12px; text-align:center; cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.06); border:4px solid #efeafc; transition:transform .1s ease;}
+  .word:active{transform:translateY(5px) scale(.97);}
+  .word .emoji{font-size:clamp(40px,8vw,58px); line-height:1; display:block;}
+  .word .label{font-size:clamp(20px,3.2vw,26px); font-weight:900; margin-top:6px;}
+  .word .hint{font-size:12px; opacity:.5; font-weight:bold;}
+
+  ol.sentences{font-size:clamp(19px,3.2vw,26px); font-weight:bold; line-height:1.7; padding-left:1.4em;}
+  ol.sentences li{cursor:pointer; margin:4px 0; border-radius:10px; padding:2px 6px;}
+  ol.sentences li:active{background:#f4f0ff;}
+  ol.sentences .hint{font-size:14px; opacity:.5;}
+
+  .padbox{position:relative; width:100%; border-radius:22px; overflow:hidden; border:5px dashed #e1d9f4; background:#fbfaff; margin:10px auto 0;}
+  .padbox canvas{display:block; width:100%; touch-action:none;}
+  .padtools{text-align:center; margin-top:8px;}
+
+  .feedback{font-size:clamp(19px,3vw,28px); font-weight:900; min-height:1.4em; margin:10px 0 4px; text-align:center;}
+  .score{font-size:clamp(17px,2.6vw,23px); font-weight:bold; margin-top:14px; text-align:center;}
+  .center{text-align:center;}
+  .starwrap{text-align:center; animation:pop .5s ease;}
+  @keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .bigstar{width:clamp(150px,42vw,230px); height:auto; filter:drop-shadow(0 8px 6px rgba(224,168,0,.25));}
+  .starpct{font-size:clamp(28px,5vw,40px); font-weight:900; color:#E0A800;}
+  .resultmsg{font-size:clamp(20px,3.2vw,28px); font-weight:900; margin:8px 0 4px;}
+
+  footer{text-align:center; margin-top:40px; opacity:.5; font-size:14px; font-weight:bold;}
+  .confetti{position:fixed; top:-20px; font-size:26px; pointer-events:none; z-index:50; animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(540deg); opacity:.9;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a href="index.html" class="homelink">⬅ Inicio</a>
+    <h1 style="margin-top:8px">✏️ Las Consonantes</h1>
+    <p class="sub">Nombre · Sonido · Trazo · Conexión · Dictado</p>
+    <button class="speak big" onclick="sayUI('welcome')"><span class="ic">🔊</span> Escuchar instrucciones</button>
+    <div class="voicebar">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="netVoice" checked style="width:20px;height:20px"> 🌟 Voz natural
+      </label>
+      <span style="opacity:.4">·</span><span>🗣️</span>
+      <select id="voicePick" aria-label="Elegir voz"></select>
+      <span id="voiceNote" style="opacity:.7;font-size:13px"></span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <!-- Video -->
+  <section class="card" id="videocard">
+    <h2>🎬 Video de la letra <span id="vidLetter">F</span></h2>
+    <div class="vidframe"><iframe id="vidframe" src="" title="Video de la letra" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+  </section>
+
+  <!-- 1. Nombre y Sonido -->
+  <section class="card">
+    <h2>1️⃣ Nombre y Sonido</h2>
+    <div class="hero">
+      <div class="bigletters" id="bigletter" style="background:#5b8def">F f</div>
+      <div class="heroinfo">
+        <div class="mouth">👄</div>
+        <button class="speak" onclick="sayName(current)"><span class="ic">🔊</span> Nombre</button>
+        <button class="speak" onclick="saySound(current)"><span class="ic">🔊</span> Sonido</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Trazo y Conexión -->
+  <section class="card">
+    <h2>2️⃣ Trazo y Conexión</h2>
+    <p class="lead">Traza la letra (mayúscula y minúscula):</p>
+    <div class="padbox"><canvas id="tcanvas"></canvas></div>
+    <div class="padtools"><button class="speak sm" onclick="pads.trace.clear()"><span class="ic">🧽</span> Borrar</button></div>
+    <p class="lead">Conexión: une la letra con cada vocal y escribe la palabra.</p>
+    <div class="cards" id="connections"></div>
+    <div class="padbox"><canvas id="concanvas"></canvas></div>
+    <div class="padtools"><button class="speak sm" onclick="pads.con.clear()"><span class="ic">🧽</span> Borrar</button></div>
+  </section>
+
+  <!-- 3. Lluvia de Palabras -->
+  <section class="card">
+    <h2>3️⃣ Lluvia de Palabras</h2>
+    <p class="lead">Escucha y copia las oraciones:</p>
+    <ol class="sentences" id="sentences"></ol>
+    <div class="padbox"><canvas id="copycanvas"></canvas></div>
+    <div class="padtools"><button class="speak sm" onclick="pads.copy.clear()"><span class="ic">🧽</span> Borrar</button></div>
+  </section>
+
+  <!-- 4. Escritura Independiente -->
+  <section class="card">
+    <h2>4️⃣ Escritura Independiente</h2>
+    <p class="lead" id="freeprompt">Escribe tus propias oraciones con la letra F ✍️</p>
+    <div class="padbox"><canvas id="freecanvas"></canvas></div>
+    <div class="padtools"><button class="speak sm" onclick="pads.free.clear()"><span class="ic">🧽</span> Borrar</button></div>
+  </section>
+
+  <!-- 5. Dictado -->
+  <section class="card" id="dictado">
+    <h2>5️⃣ Dictado</h2>
+    <div class="center"><button class="speak sm" onclick="sayUI('dictadohow')"><span class="ic">🔊</span> Cómo funciona</button></div>
+    <div class="feedback" id="dHint">Toca EMPEZAR para escuchar las palabras</div>
+    <button class="speak" id="dhear" style="display:none;margin:0 auto"><span class="ic">🔊</span> Escuchar otra vez</button>
+    <div class="padbox" id="dbox" style="display:none"><canvas id="dictcanvas"></canvas></div>
+    <div class="feedback" id="dfeedback"></div>
+    <div class="center" id="dbuttons" style="display:none"><button class="speak big" onclick="checkDict()"><span class="ic">🔎</span> Revisar</button></div>
+    <button class="speak big" id="dnext" style="display:none" onclick="dAdvance()"><span class="ic">➡️</span> Siguiente</button>
+    <div id="dresult" style="display:none"></div>
+    <div class="score" id="dscore"></div>
+    <div class="center"><button class="speak big" id="dstart" onclick="startDict()"><span class="ic">▶️</span> EMPEZAR</button></div>
+  </section>
+
+  <footer>Hecho con ❤️ para una gran lectora · Las consonantes</footer>
+</div>
+
+<script>
+/* ============ Data ============ */
+const CONS = {
+  F: { color:'#5b8def', up:'F', low:'f', name:'efe', video:'Lr9TiSZL59Y',
+       con:[ {v:'a',e:'👨‍👩‍👧‍👦',w:'familia',syl:'fa'},
+             {v:'e',e:'😀',w:'feliz',syl:'fe'},
+             {v:'i',e:'🚶',w:'fila',syl:'fi'},
+             {v:'o',e:'🦭',w:'foca',syl:'fo'},
+             {v:'u',e:'🔥',w:'fuego',syl:'fu'} ],
+       sents:['La foto es linda.','La fresa es rica.','La fila está ordenada.','El fénix nace.','La familia juega.'] }
+};
+const ORDER=['F'];
+let current='F';
+function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z]/g,''); }
+
+/* ============ Speech engine (base audio/cons/, with iPad rate fix) ============ */
+let enVoice=null, enVoices=[];
+function scoreVoice(v){
+  const n=(v.name||'').toLowerCase(); let s=0;
+  if(/^es/i.test(v.lang)) s+=10; else if(/^en/i.test(v.lang)) s-=4; else return -1;
+  if(/enhanced|premium|neural|natural/.test(n)) s+=40; if(/siri/.test(n)) s+=30; if(/google/.test(n)) s+=22;
+  if(/mónica|monica|paulina|jorge|juan|diego|marisol/.test(n)) s+=12;
+  if(/fred|albert|zarvox|bells|boing|bubbles|trinoids|whisper|wobble|compact|eloquence/.test(n)) s-=50;
+  if(v.localService===false) s+=4; return s;
+}
+function refreshVoices(){
+  const vs=speechSynthesis.getVoices();
+  enVoices=vs.filter(v=>/^(es|en)/i.test(v.lang)).sort((a,b)=>scoreVoice(b)-scoreVoice(a));
+  const stored=localStorage.getItem('voiceURI_es');
+  enVoice=(stored&&enVoices.find(v=>v.voiceURI===stored))||enVoices[0]||vs[0]||null;
+  buildVoicePicker();
+}
+function buildVoicePicker(){
+  const sel=document.getElementById('voicePick'); if(!sel||!enVoices.length) return; sel.innerHTML='';
+  enVoices.forEach(v=>{ const o=document.createElement('option'); o.value=v.voiceURI;
+    let tag=/enhanced|premium|neural|natural|siri/i.test(v.name)?' ⭐':'';
+    o.textContent=v.name.replace(/\s*\(.*?\)/,'')+' ('+v.lang+')'+tag;
+    if(enVoice&&v.voiceURI===enVoice.voiceURI) o.selected=true; sel.appendChild(o); });
+  sel.onchange=()=>{ enVoice=enVoices.find(v=>v.voiceURI===sel.value)||enVoice; localStorage.setItem('voiceURI_es',sel.value); sayUI('hello'); };
+}
+if('speechSynthesis' in window){ refreshVoices(); speechSynthesis.onvoiceschanged=()=>refreshVoices(); }
+
+let preferNat=(localStorage.getItem('preferNat')!=='0'), natOK=true, sessionId=0;
+const uaudio=new Audio(); uaudio.preload='auto';
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const RATE=0.95;
+function stopAll(){ try{speechSynthesis.cancel();}catch(e){} try{uaudio.onended=null;uaudio.onerror=null;uaudio.pause();}catch(e){} }
+function newSession(){ stopAll(); return ++sessionId; }
+function clipSrc(kind,name){ return 'audio/cons/'+kind+'/'+name+'.mp3'; }
+function playClip(src,rate,id){
+  return new Promise((res,rej)=>{ if(id!==sessionId) return res();
+    const r=rate||1;
+    uaudio.onended=()=>res(); uaudio.onerror=()=>rej(new Error('clip'));
+    uaudio.defaultPlaybackRate=r; uaudio.src=src; uaudio.playbackRate=r;
+    uaudio.onloadedmetadata=()=>{ uaudio.playbackRate=r; };
+    const p=uaudio.play(); if(p&&p.catch) p.catch(()=>rej(new Error('block'))); });
+}
+function synthSay(text,rate,id){
+  return new Promise(res=>{ if(!('speechSynthesis'in window)||id!==sessionId||!text) return res();
+    const u=new SpeechSynthesisUtterance(text); u.lang=enVoice&&/^es/i.test(enVoice.lang)?enVoice.lang:'es-ES'; u.rate=rate*0.95; u.pitch=1.0;
+    if(enVoice) u.voice=enVoice; u.onend=res; u.onerror=res; speechSynthesis.speak(u); });
+}
+async function playSeq(items){
+  const id=newSession();
+  for(const it of items){ if(id!==sessionId) return;
+    const rate=it.rate||RATE;
+    if(preferNat&&natOK&&it.name){ try{ await playClip(clipSrc(it.kind,it.name),rate,id); continue; }
+      catch(e){ if(e&&e.message==='clip'){ natOK=false; updateVoiceUI(); } } }
+    await synthSay(it.text!=null?it.text:'', rate, id);
+  }
+}
+function sayName(c){ return playSeq([{kind:c,name:'name',text:CONS[c].name}]); }
+function saySound(c){ return playSeq([{kind:c,name:'sound'}]); }
+function sayCon(c,v){ const o=CONS[c].con.find(x=>x.v===v); return playSeq([{kind:c,name:'con_'+v,text:o&&o.w}]); }
+function saySent(c,i){ return playSeq([{kind:c,name:'sent'+(i+1),text:CONS[c].sents[i]}]); }
+function sayUI(key){ return playSeq([{kind:'ui',name:key}]); }
+function updateVoiceUI(){
+  const cb=document.getElementById('netVoice'), note=document.getElementById('voiceNote');
+  if(cb){ cb.checked=preferNat&&natOK; cb.disabled=!natOK; }
+  if(note){ note.textContent=natOK?'':'(voz natural no disponible — usando voz del equipo)'; }
+}
+function initNetToggle(){ const cb=document.getElementById('netVoice'); if(!cb) return; cb.checked=preferNat&&natOK;
+  cb.onchange=()=>{ preferNat=cb.checked; localStorage.setItem('preferNat',preferNat?'1':'0'); sayUI('hello'); }; }
+
+/* ============ Drawing pads ============ */
+function lineGuide(ctx,w,h){ ctx.save(); ctx.strokeStyle='#e7edfb'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,h*0.30);ctx.lineTo(w,h*0.30);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,h*0.82);ctx.lineTo(w,h*0.82);ctx.stroke();
+  ctx.setLineDash([8,10]); ctx.strokeStyle='#dbe3fb';
+  ctx.beginPath();ctx.moveTo(0,h*0.56);ctx.lineTo(w,h*0.56);ctx.stroke(); ctx.restore(); }
+function traceGuide(ctx,w,h){
+  lineGuide(ctx,w,h);
+  ctx.save(); ctx.fillStyle='rgba(91,141,239,.16)';
+  const txt=CONS[current].up+'  '+CONS[current].low;
+  let fs=Math.round(h*0.66); ctx.font='900 '+fs+'px "Comic Sans MS","Chalkboard SE",sans-serif';
+  while(ctx.measureText(txt).width>w*0.9 && fs>14){ fs-=2; ctx.font='900 '+fs+'px "Comic Sans MS","Chalkboard SE",sans-serif'; }
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(txt, w/2, h/2+h*0.04); ctx.restore();
+}
+function makePad(cv, guideFn, ratio){
+  const ctx=cv.getContext('2d'); let drawing=false, strokes=[], cur=null, t0=0;
+  function redraw(){ const w=cv.clientWidth,h=cv.clientHeight; ctx.clearRect(0,0,w,h); if(guideFn) guideFn(ctx,w,h); }
+  function size(){ const box=cv.parentElement; const w=box.clientWidth; if(!w) return;
+    const h=Math.max(150,Math.min(Math.round(w*(ratio||0.30)),300)); const dpr=window.devicePixelRatio||1;
+    cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); redraw(); }
+  function clear(){ strokes=[]; cur=null; redraw(); }
+  function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+  cv.addEventListener('pointerdown',e=>{ drawing=true; const p=pos(e); if(!strokes.length)t0=performance.now(); cur=[{x:p.x,y:p.y,t:performance.now()-t0}]; strokes.push(cur); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); });
+  cv.addEventListener('pointermove',e=>{ if(!drawing)return; const p=pos(e); if(cur)cur.push({x:p.x,y:p.y,t:performance.now()-t0});
+    ctx.strokeStyle=CONS[current].color; ctx.lineWidth=12; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); });
+  const end=()=>{ drawing=false; cur=null; };
+  cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end); cv.addEventListener('pointerleave',end);
+  return { size, clear, redraw, strokes:()=>strokes };
+}
+let pads={};
+
+/* ============ Recognition (for dictado) ============ */
+async function recognizeHandwriting(strokes,w,h){
+  const ink=strokes.filter(s=>s.length).map(s=>{ const xs=[],ys=[],ts=[]; s.forEach(p=>{xs.push(Math.round(p.x));ys.push(Math.round(p.y));ts.push(Math.round(p.t));}); return [xs,ys,ts]; });
+  const body={ options:"enable_pre_space", requests:[{ writing_guide:{writing_area_width:Math.round(w),writing_area_height:Math.round(h)}, ink:ink, language:"es" }] };
+  const res=await fetch('https://inputtools.google.com/request?ime=handwriting&app=mobile&dbg=1&cs=1&oe=UTF-8',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const data=await res.json();
+  if(data[0]!=='SUCCESS'||!data[1]||!data[1][0]) throw new Error('no-result');
+  return data[1][0][1]||[];
+}
+
+/* ============ Build tabs + select consonant ============ */
+const tabsEl=document.getElementById('tabs');
+ORDER.forEach(c=>{ const b=document.createElement('button'); b.className='tab'; b.dataset.c=c; b.textContent=c; b.style.background=CONS[c].color;
+  b.onclick=()=>{ selectCons(c); sayName(c); }; tabsEl.appendChild(b); });
+function hl(text, color){ // color the consonant letter inside a sentence
+  const low=CONS[current].low, up=CONS[current].up;
+  return text.replace(new RegExp('('+up+low+'|['+up+low+'])','g'), m=>'<b style="color:'+color+'">'+m+'</b>');
+}
+function syllableHTML(o, color){ // bold the starting syllable
+  const rest=o.w.slice(o.syl.length);
+  return '<b style="color:'+color+'">'+o.w.slice(0,o.syl.length)+'</b>'+rest;
+}
+function selectCons(c){
+  current=c; const data=CONS[c];
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.c===c));
+  // video
+  document.getElementById('vidLetter').textContent=c;
+  const want='https://www.youtube-nocookie.com/embed/'+data.video+'?rel=0';
+  const vf=document.getElementById('vidframe'); if(vf.getAttribute('src')!==want) vf.setAttribute('src',want);
+  // 1. name/sound
+  document.getElementById('bigletter').textContent=data.up+' '+data.low;
+  document.getElementById('bigletter').style.background=data.color;
+  // 2. connections
+  document.getElementById('connections').innerHTML = data.con.map(o=>
+    '<div class="word" onclick="sayCon(\''+c+'\',\''+o.v+'\')"><span class="emoji">'+o.e+'</span>'+
+    '<span class="label">'+o.v+' → '+syllableHTML(o,data.color)+'</span><span class="hint">toca para oír 🔊</span></div>').join('');
+  // 3. sentences
+  document.getElementById('sentences').innerHTML = data.sents.map((s,i)=>
+    '<li onclick="saySent(\''+c+'\','+i+')">'+hl(s,data.color)+' <span class="hint">🔊</span></li>').join('');
+  // 4. free prompt
+  document.getElementById('freeprompt').textContent='Escribe tus propias oraciones con la letra '+data.up+' ✍️';
+  // reset pads
+  ['trace','con','copy','free'].forEach(k=>pads[k]&&pads[k].clear());
+  resetDictado();
+}
+
+/* ============ Shared helpers ============ */
+const ROUNDS=5;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function starHTML(idp,pct){ const fill=Math.max(0,Math.min(100,Math.round(pct))), gid=idp+'-sg';
+  return '<div class="starwrap"><svg viewBox="0 0 100 100" class="bigstar"><defs><linearGradient id="'+gid+'" x1="0" y1="1" x2="0" y2="0">'+
+    '<stop offset="0%" stop-color="#FFD43B"/><stop offset="'+fill+'%" stop-color="#FFD43B"/><stop offset="'+fill+'%" stop-color="#ece8f7"/><stop offset="100%" stop-color="#ece8f7"/></linearGradient></defs>'+
+    '<path d="M50 6 L61.8 38.2 L96 38.8 L68.5 59.6 L78.6 92.5 L50 72.6 L21.4 92.5 L31.5 59.6 L4 38.8 L38.2 38.2 Z" fill="url(#'+gid+')" stroke="#E0A800" stroke-width="3.5" stroke-linejoin="round"/></svg><div class="starpct">'+fill+'%</div></div>'; }
+function praiseFor(p){ return p>=90?'¡Increíble! 🌟':(p>=70?'¡Muy bien! ⭐':(p>=50?'¡Buen trabajo! 👍':'¡Sigue practicando! 💪')); }
+function confetti(){ const em=['🎉','⭐','🎈','✨','🌟','🥳']; for(let i=0;i<18;i++){ const c=document.createElement('div'); c.className='confetti'; c.textContent=em[Math.floor(Math.random()*em.length)]; c.style.left=Math.random()*100+'vw'; c.style.animationDuration=(1.5+Math.random()*1.5)+'s'; document.body.appendChild(c); setTimeout(()=>c.remove(),3200);} }
+
+/* ============ 5. Dictado game ============ */
+let dQueue=[], dItem=null, dAttempt=1, dScore=0, dTotal=0, dChecking=false, dStarted=false;
+function resetDictado(){
+  dStarted=false; dScore=0; dTotal=0;
+  document.getElementById('dresult').style.display='none';
+  document.getElementById('dHint').style.display=''; document.getElementById('dHint').textContent='Toca EMPEZAR para escuchar las palabras';
+  document.getElementById('dfeedback').innerHTML='';
+  ['dhear','dbox','dbuttons','dnext'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('dscore').innerHTML='';
+  const s=document.getElementById('dstart'); s.style.display='inline-flex'; s.innerHTML='<span class="ic">▶️</span> EMPEZAR';
+}
+function startDict(){
+  dStarted=true; dScore=0; dTotal=0;
+  dQueue=shuffle(CONS[current].con.slice()).slice(0,ROUNDS);
+  document.getElementById('dresult').style.display='none';
+  document.getElementById('dbox').style.display='block';
+  document.getElementById('dhear').style.display='inline-flex';
+  document.getElementById('dstart').style.display='none';
+  document.getElementById('dstart').innerHTML='<span class="ic">🔄</span> Jugar otra vez';
+  pads.dict.size();
+  nextDict();
+}
+function nextDict(){
+  dAttempt=1; dItem=dQueue.shift()||CONS[current].con[0];
+  document.getElementById('dHint').textContent='Escucha y escribe la palabra ✍️';
+  document.getElementById('dfeedback').innerHTML='';
+  document.getElementById('dbuttons').style.display='block';
+  document.getElementById('dnext').style.display='none';
+  pads.dict.clear(); updateDScore();
+  sayCon(current, dItem.v);
+}
+document.getElementById('dhear').onclick=()=>{ if(dItem) sayCon(current, dItem.v); };
+function showDNext(){
+  document.getElementById('dbuttons').style.display='none';
+  const b=document.getElementById('dnext'); b.innerHTML=(dTotal>=ROUNDS)?'<span class="ic">⭐</span> Ver mi estrella':'<span class="ic">➡️</span> Siguiente'; b.style.display='inline-flex';
+}
+function dAdvance(){ if(dTotal>=ROUNDS) showDictResult(); else nextDict(); }
+async function checkDict(){
+  if(!dItem || dChecking) return;
+  const strokes=pads.dict.strokes();
+  if(!strokes.length){ document.getElementById('dfeedback').innerHTML='Escribe la palabra primero ✍️'; sayUI('writeit'); return; }
+  dChecking=true; document.getElementById('dfeedback').innerHTML='Revisando… 🔎';
+  let cands;
+  try{ cands=await recognizeHandwriting(strokes, document.getElementById('dictcanvas').clientWidth, document.getElementById('dictcanvas').clientHeight); }
+  catch(e){ dChecking=false; document.getElementById('dfeedback').innerHTML='No pude leerla. Intenta otra vez ✍️'; sayUI('couldnt'); return; }
+  dChecking=false;
+  const target=norm(dItem.w);
+  const got=cands.slice(0,12).map(norm);
+  const correct=got.includes(target);
+  if(correct){
+    dScore++; dTotal++;
+    document.getElementById('dfeedback').innerHTML='🎉 ¡Sí! <b style="color:'+CONS[current].color+'">'+dItem.w+'</b>';
+    playSeq([{kind:'ui',name:'yes'},{kind:current,name:'con_'+dItem.v,text:dItem.w},{kind:'ui',name:'greatjob'}]);
+    confetti(); updateDScore(); showDNext();
+  }else if(dAttempt===1){
+    dAttempt=2; pads.dict.clear();
+    document.getElementById('dfeedback').innerHTML='Casi — ¡borra e inténtalo otra vez! ✍️';
+    playSeq([{kind:'ui',name:'tryagain'}]);
+    setTimeout(()=>{ if(dItem) sayCon(current,dItem.v); }, 1400);
+  }else{
+    dTotal++; document.getElementById('dfeedback').innerHTML='¡Buen intento! Toca Siguiente ➡️';
+    playSeq([{kind:'ui',name:'goodtry'}]); updateDScore(); showDNext();
+  }
+}
+function showDictResult(){
+  ['dHint','dhear','dbox','dbuttons','dnext','dfeedback','dscore'].forEach(id=>document.getElementById(id).style.display='none');
+  const pct=Math.round(dScore/ROUNDS*100);
+  document.getElementById('dresult').innerHTML=starHTML('d',pct)+'<div class="resultmsg">¡Escribiste <b>'+dScore+' de '+ROUNDS+'</b> bien!<br>'+praiseFor(pct)+'</div>';
+  document.getElementById('dresult').style.display='block';
+  document.getElementById('dstart').style.display='inline-flex';
+  playSeq([{kind:'ui',name:'finished'}]); confetti();
+}
+function updateDScore(){ const s=document.getElementById('dscore'); if(s) s.innerHTML = dTotal?('✅ '+dScore+' correctas · '+dTotal+' / '+ROUNDS):''; }
+
+/* ============ Init ============ */
+initNetToggle(); updateVoiceUI();
+pads.trace=makePad(document.getElementById('tcanvas'), traceGuide, 0.34);
+pads.con  =makePad(document.getElementById('concanvas'), lineGuide, 0.30);
+pads.copy =makePad(document.getElementById('copycanvas'), lineGuide, 0.40);
+pads.free =makePad(document.getElementById('freecanvas'), lineGuide, 0.46);
+pads.dict =makePad(document.getElementById('dictcanvas'), lineGuide, 0.30);
+selectCons('F');
+['trace','con','copy','free'].forEach(k=>pads[k].size());
+window.addEventListener('resize',()=>{ Object.values(pads).forEach(p=>p.size()); });
+document.body.addEventListener('touchstart',function prime(){
+  if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }
+  document.body.removeEventListener('touchstart',prime);
+},{once:true});
+</script>
+</body>
+</html>
