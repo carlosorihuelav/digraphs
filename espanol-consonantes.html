@@ -56,6 +56,8 @@
   .word .hint{font-size:12px; opacity:.5; font-weight:bold;}
 
   .sentblock{margin:0 0 18px;}
+  .connhead{font-size:clamp(17px,2.8vw,22px); font-weight:bold; margin:8px 0 2px; text-align:center;}
+  .connhead .vw{display:inline-block; min-width:1.3em; font-size:1.3em; font-weight:900;}
   .sent{font-size:clamp(19px,3.2vw,26px); font-weight:bold; cursor:pointer; border-radius:12px; padding:6px 8px;}
   .sent:active{background:#f4f0ff;}
   .sent .hint{font-size:15px; opacity:.5;}
@@ -125,9 +127,8 @@
     <p class="lead">Ahora traza tú:</p>
     <div class="padbox"><canvas id="tcanvas"></canvas></div>
     <div class="padtools"><button class="speak sm" onclick="pads.trace.clear()"><span class="ic">🧽</span> Borrar</button></div>
-    <p class="lead">Conexión: escribe una palabra con la letra y cada vocal.</p>
-    <div class="padbox"><canvas id="concanvas"></canvas></div>
-    <div class="padtools"><button class="speak sm" onclick="pads.con.clear()"><span class="ic">🧽</span> Borrar</button></div>
+    <p class="lead">Conexión: escribe una palabra para cada vocal y revisa.</p>
+    <div id="conexion"></div>
   </section>
 
   <!-- 3. Lluvia de Palabras -->
@@ -317,7 +318,7 @@ function makePad(cv, guideFn, ratio){
     ctx.strokeStyle=CONS[current].color; ctx.lineWidth=12; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); });
   const end=()=>{ drawing=false; cur=null; };
   cv.addEventListener('pointerup',end); cv.addEventListener('pointercancel',end); cv.addEventListener('pointerleave',end);
-  return { size, clear, redraw, strokes:()=>strokes };
+  return { size, clear, redraw, strokes:()=>strokes, cv };
 }
 let pads={};
 
@@ -329,6 +330,30 @@ async function recognizeHandwriting(strokes,w,h){
   const data=await res.json();
   if(data[0]!=='SUCCESS'||!data[1]||!data[1][0]) throw new Error('no-result');
   return data[1][0][1]||[];
+}
+
+/* ============ Conexión: verify a word contains the syllable ============ */
+let connChecking=false;
+async function checkConn(pad, syl, fb){
+  if(connChecking) return;
+  const strokes=pad.strokes();
+  if(!strokes.length){ fb.innerHTML='Escribe una palabra primero ✍️'; return; }
+  connChecking=true; fb.innerHTML='Revisando… 🔎';
+  let cands;
+  try{ cands=await recognizeHandwriting(strokes, pad.cv.clientWidth, pad.cv.clientHeight); }
+  catch(e){ connChecking=false; fb.innerHTML='No pude leerla. Intenta otra vez ✍️'; sayUI('couldnt'); return; }
+  connChecking=false;
+  const want=norm(syl);
+  const got=cands.slice(0,12).map(norm);
+  const hit=got.find(g=>g.includes(want));
+  if(hit){
+    fb.innerHTML='🎉 ¡Muy bien! “<b style="color:'+CONS[current].color+'">'+(cands.find(c=>norm(c)===hit)||hit)+'</b>” tiene '+syl;
+    playSeq([{kind:'ui',name:'yes'},{kind:'ui',name:'greatjob'}]); confetti();
+  }else{
+    const read=cands[0]||'—';
+    fb.innerHTML='Leí “<b>'+read+'</b>”. Debe tener <b style="color:'+CONS[current].color+'">'+syl+'</b>. ¡Inténtalo! ✍️';
+    playSeq([{kind:'ui',name:'tryagain'}]);
+  }
 }
 
 /* ============ Build tabs + select consonant ============ */
@@ -355,6 +380,22 @@ function selectCons(c){
   document.getElementById('bigletter').style.background=data.color;
   // 2. stroke demo
   document.getElementById('strokeDemo').innerHTML = '<div class="strokewrap">'+strokeSVG('upper')+strokeSVG('lower')+'</div>';
+  // 2b. conexión — one writing pad + Revisar + Borrar per vowel
+  const cx=document.getElementById('conexion'); cx.innerHTML=''; pads.conn=[];
+  ['a','e','i','o','u'].forEach(v=>{
+    const syl=data.low+v;
+    const row=document.createElement('div'); row.className='sentblock';
+    row.innerHTML='<div class="connhead"><span class="vw" style="color:'+data.color+'">'+v+'</span> → escribe una palabra con <b style="color:'+data.color+'">'+syl+'</b></div>'+
+      '<div class="padbox"><canvas></canvas></div>'+
+      '<div class="padtools"><button class="speak sm rev"><span class="ic">🔎</span> Revisar</button> <button class="speak sm clr"><span class="ic">🧽</span> Borrar</button></div>'+
+      '<div class="feedback fb"></div>';
+    cx.appendChild(row);
+    const pad=makePad(row.querySelector('canvas'), lineGuide, 0.18);
+    const fb=row.querySelector('.fb');
+    pads.conn.push(pad);
+    row.querySelector('.rev').onclick=()=>checkConn(pad, syl, fb);
+    row.querySelector('.clr').onclick=()=>{ pad.clear(); fb.innerHTML=''; };
+  });
   // 3. lluvia de palabras — a writing pad under each sentence
   const ll=document.getElementById('lluvia'); ll.innerHTML=''; pads.copies=[];
   data.sents.forEach((s,i)=>{
@@ -371,7 +412,7 @@ function selectCons(c){
   // 4. free prompt
   document.getElementById('freeprompt').textContent='Escribe 5 oraciones o palabras con la letra '+data.up+' ✍️';
   // reset pads
-  ['trace','con','free'].forEach(k=>pads[k]&&pads[k].clear());
+  ['trace','free'].forEach(k=>pads[k]&&pads[k].clear());
   setTimeout(sizeAllPads,0);
   resetDictado();
 }
@@ -464,12 +505,11 @@ function updateDScore(){ const s=document.getElementById('dscore'); if(s) s.inne
 initNetToggle(); updateVoiceUI();
 function nLinesGuide(n){ return (ctx,w,h)=>{ ctx.save(); ctx.strokeStyle='#dbe3fb'; ctx.lineWidth=2; const gap=h/(n+1);
   for(let i=1;i<=n;i++){ const y=Math.round(gap*i); ctx.beginPath(); ctx.moveTo(w*0.03,y); ctx.lineTo(w*0.97,y); ctx.stroke(); } ctx.restore(); }; }
-function sizeAllPads(){ ['trace','con','free','dict'].forEach(k=>pads[k]&&pads[k].size()); (pads.copies||[]).forEach(p=>p&&p.size()); }
+function sizeAllPads(){ ['trace','free','dict'].forEach(k=>pads[k]&&pads[k].size()); (pads.copies||[]).forEach(p=>p&&p.size()); (pads.conn||[]).forEach(p=>p&&p.size()); }
 pads.trace=makePad(document.getElementById('tcanvas'), traceGuide, 0.34);
-pads.con  =makePad(document.getElementById('concanvas'), conexGuide, 0.80);
 pads.free =makePad(document.getElementById('freecanvas'), nLinesGuide(5), 0.85);
 pads.dict =makePad(document.getElementById('dictcanvas'), lineGuide, 0.30);
-pads.copies=[];
+pads.copies=[]; pads.conn=[];
 selectCons('F');
 sizeAllPads();
 window.addEventListener('resize', sizeAllPads);
