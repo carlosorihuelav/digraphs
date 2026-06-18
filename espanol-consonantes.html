@@ -141,9 +141,8 @@
   <!-- 4. Escritura Independiente -->
   <section class="card">
     <h2>4️⃣ Escritura Independiente</h2>
-    <p class="lead" id="freeprompt">Escribe tus propias oraciones con la letra F ✍️</p>
-    <div class="padbox"><canvas id="freecanvas"></canvas></div>
-    <div class="padtools"><button class="speak sm" onclick="pads.free.clear()"><span class="ic">🧽</span> Borrar</button></div>
+    <p class="lead" id="freeprompt">Escribe 5 oraciones o palabras con la letra F ✍️</p>
+    <div id="libre"></div>
   </section>
 
   <!-- 5. Dictado -->
@@ -356,6 +355,35 @@ async function checkConn(pad, syl, fb){
   }
 }
 
+/* verify a copied sentence matches the target */
+async function checkCopy(pad, target, fb){
+  if(connChecking) return; const strokes=pad.strokes();
+  if(!strokes.length){ fb.innerHTML='Copia la oración primero ✍️'; return; }
+  connChecking=true; fb.innerHTML='Revisando… 🔎';
+  let cands;
+  try{ cands=await recognizeHandwriting(strokes, pad.cv.clientWidth, pad.cv.clientHeight); }
+  catch(e){ connChecking=false; fb.innerHTML='No pude leerla. Intenta otra vez ✍️'; sayUI('couldnt'); return; }
+  connChecking=false;
+  const read=cands[0]||'—';
+  const ok=cands.slice(0,8).some(c=>norm(c)===norm(target));
+  if(ok){ fb.innerHTML='🎉 ¡Igual a la oración!'; playSeq([{kind:'ui',name:'yes'},{kind:'ui',name:'greatjob'}]); confetti(); }
+  else{ fb.innerHTML='Leí: “<b>'+read+'</b>”. Compáralo con la oración y corrige ✍️'; playSeq([{kind:'ui',name:'tryagain'}]); }
+}
+/* verify a free line uses the letter, and read it back */
+async function checkFree(pad, fb){
+  if(connChecking) return; const strokes=pad.strokes();
+  if(!strokes.length){ fb.innerHTML='Escribe algo primero ✍️'; return; }
+  connChecking=true; fb.innerHTML='Revisando… 🔎';
+  let cands;
+  try{ cands=await recognizeHandwriting(strokes, pad.cv.clientWidth, pad.cv.clientHeight); }
+  catch(e){ connChecking=false; fb.innerHTML='No pude leerla. Intenta otra vez ✍️'; sayUI('couldnt'); return; }
+  connChecking=false;
+  const read=cands[0]||'—', c=CONS[current];
+  const has=cands.slice(0,8).some(x=>norm(x).includes(c.low));
+  if(has){ fb.innerHTML='🎉 ¡Bien! Leí: “<b style="color:'+c.color+'">'+read+'</b>” y tiene la '+c.up; playSeq([{kind:'ui',name:'yes'},{kind:'ui',name:'greatjob'}]); confetti(); }
+  else{ fb.innerHTML='Leí: “<b>'+read+'</b>”. Recuerda usar la <b style="color:'+c.color+'">'+c.up+'</b> ✍️'; playSeq([{kind:'ui',name:'tryagain'}]); }
+}
+
 /* ============ Build tabs + select consonant ============ */
 const tabsEl=document.getElementById('tabs');
 ORDER.forEach(c=>{ const b=document.createElement('button'); b.className='tab'; b.dataset.c=c; b.textContent=c; b.style.background=CONS[c].color;
@@ -402,17 +430,33 @@ function selectCons(c){
     const block=document.createElement('div'); block.className='sentblock';
     block.innerHTML='<div class="sent" data-i="'+i+'">'+(i+1)+'. '+hl(s,data.color)+' <span class="hint">🔊</span></div>'+
       '<div class="padbox"><canvas></canvas></div>'+
-      '<div class="padtools"><button class="speak sm"><span class="ic">🧽</span> Borrar</button></div>';
+      '<div class="padtools"><button class="speak sm rev"><span class="ic">🔎</span> Revisar</button> <button class="speak sm clr"><span class="ic">🧽</span> Borrar</button></div>'+
+      '<div class="feedback fb"></div>';
     ll.appendChild(block);
     block.querySelector('.sent').onclick=()=>saySent(c,i);
     const pad=makePad(block.querySelector('canvas'), lineGuide, 0.20);
+    const fb=block.querySelector('.fb');
     pads.copies.push(pad);
-    block.querySelector('button').onclick=()=>pad.clear();
+    block.querySelector('.rev').onclick=()=>checkCopy(pad, s, fb);
+    block.querySelector('.clr').onclick=()=>{ pad.clear(); fb.innerHTML=''; };
   });
-  // 4. free prompt
+  // 4. escritura independiente — 5 lines, each with Revisar + Borrar
   document.getElementById('freeprompt').textContent='Escribe 5 oraciones o palabras con la letra '+data.up+' ✍️';
+  const lb=document.getElementById('libre'); lb.innerHTML=''; pads.frees=[];
+  for(let i=0;i<5;i++){
+    const row=document.createElement('div'); row.className='sentblock';
+    row.innerHTML='<div class="padbox"><canvas></canvas></div>'+
+      '<div class="padtools"><button class="speak sm rev"><span class="ic">🔎</span> Revisar</button> <button class="speak sm clr"><span class="ic">🧽</span> Borrar</button></div>'+
+      '<div class="feedback fb"></div>';
+    lb.appendChild(row);
+    const pad=makePad(row.querySelector('canvas'), lineGuide, 0.16);
+    const fb=row.querySelector('.fb');
+    pads.frees.push(pad);
+    row.querySelector('.rev').onclick=()=>checkFree(pad, fb);
+    row.querySelector('.clr').onclick=()=>{ pad.clear(); fb.innerHTML=''; };
+  }
   // reset pads
-  ['trace','free'].forEach(k=>pads[k]&&pads[k].clear());
+  ['trace'].forEach(k=>pads[k]&&pads[k].clear());
   setTimeout(sizeAllPads,0);
   resetDictado();
 }
@@ -505,11 +549,10 @@ function updateDScore(){ const s=document.getElementById('dscore'); if(s) s.inne
 initNetToggle(); updateVoiceUI();
 function nLinesGuide(n){ return (ctx,w,h)=>{ ctx.save(); ctx.strokeStyle='#dbe3fb'; ctx.lineWidth=2; const gap=h/(n+1);
   for(let i=1;i<=n;i++){ const y=Math.round(gap*i); ctx.beginPath(); ctx.moveTo(w*0.03,y); ctx.lineTo(w*0.97,y); ctx.stroke(); } ctx.restore(); }; }
-function sizeAllPads(){ ['trace','free','dict'].forEach(k=>pads[k]&&pads[k].size()); (pads.copies||[]).forEach(p=>p&&p.size()); (pads.conn||[]).forEach(p=>p&&p.size()); }
+function sizeAllPads(){ ['trace','dict'].forEach(k=>pads[k]&&pads[k].size()); (pads.copies||[]).forEach(p=>p&&p.size()); (pads.conn||[]).forEach(p=>p&&p.size()); (pads.frees||[]).forEach(p=>p&&p.size()); }
 pads.trace=makePad(document.getElementById('tcanvas'), traceGuide, 0.34);
-pads.free =makePad(document.getElementById('freecanvas'), nLinesGuide(5), 0.85);
 pads.dict =makePad(document.getElementById('dictcanvas'), lineGuide, 0.30);
-pads.copies=[]; pads.conn=[];
+pads.copies=[]; pads.conn=[]; pads.frees=[];
 selectCons('F');
 sizeAllPads();
 window.addEventListener('resize', sizeAllPads);
