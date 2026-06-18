@@ -45,6 +45,9 @@
   .heroinfo{text-align:center;}
   .mouth{font-size:clamp(56px,12vw,90px); line-height:1; margin:4px 0 8px;}
 
+  .strokewrap{display:flex; flex-wrap:wrap; justify-content:center; gap:10px; align-items:flex-end;}
+  .strokeSVG{width:clamp(120px,32vw,175px); height:auto; background:#fbfaff; border-radius:18px; box-shadow:inset 0 0 0 3px #eef1fb; padding:6px;}
+  .strokeSVG .ink{transition:stroke-dashoffset .6s linear;}
   .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin:12px 0;}
   .word{background:#faf8ff; border-radius:22px; padding:14px 10px 12px; text-align:center; cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.06); border:4px solid #efeafc; transition:transform .1s ease;}
   .word:active{transform:translateY(5px) scale(.97);}
@@ -116,11 +119,13 @@
   <!-- 2. Trazo y Conexión -->
   <section class="card">
     <h2>2️⃣ Trazo y Conexión</h2>
-    <p class="lead">Traza la letra (mayúscula y minúscula):</p>
+    <p class="lead">Mira cómo se traza la letra:</p>
+    <div id="strokeDemo" class="center"></div>
+    <div class="center"><button class="speak" onclick="playTrace()"><span class="ic">▶️</span> Ver el trazo</button></div>
+    <p class="lead">Ahora traza tú:</p>
     <div class="padbox"><canvas id="tcanvas"></canvas></div>
     <div class="padtools"><button class="speak sm" onclick="pads.trace.clear()"><span class="ic">🧽</span> Borrar</button></div>
-    <p class="lead">Conexión: une la letra con cada vocal y escribe la palabra.</p>
-    <div class="cards" id="connections"></div>
+    <p class="lead">Conexión: escribe una palabra con la letra y cada vocal.</p>
     <div class="padbox"><canvas id="concanvas"></canvas></div>
     <div class="padtools"><button class="speak sm" onclick="pads.con.clear()"><span class="ic">🧽</span> Borrar</button></div>
   </section>
@@ -173,6 +178,12 @@ const CONS = {
 };
 const ORDER=['F'];
 let current='F';
+/* stroke order paths per letter (for the "ver el trazo" animation) */
+const STROKES={
+  F:{ vb:'0 0 130 170',
+      upper:[ {d:'M46 24 L46 150', n:[46,24]}, {d:'M46 26 L112 26', n:[108,26]}, {d:'M46 86 L100 86', n:[96,86]} ],
+      lower:[ {d:'M90 44 Q90 22 66 24 Q50 26 50 52 L50 150', n:[84,30]}, {d:'M30 76 L78 76', n:[76,76]} ] }
+};
 function norm(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z]/g,''); }
 
 /* ============ Speech engine (base audio/cons/, with iPad rate fix) ============ */
@@ -258,6 +269,43 @@ function traceGuide(ctx,w,h){
   while(ctx.measureText(txt).width>w*0.9 && fs>14){ fs-=2; ctx.font='900 '+fs+'px "Comic Sans MS","Chalkboard SE",sans-serif'; }
   ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(txt, w/2, h/2+h*0.04); ctx.restore();
 }
+/* worksheet guide for the Conexión pad: consonant + vowels column + writing lines */
+function conexGuide(ctx,w,h){
+  const c=CONS[current]; ctx.save(); ctx.textBaseline='middle';
+  ctx.fillStyle=c.color; ctx.font='900 '+Math.round(h*0.30)+'px "Comic Sans MS","Chalkboard SE",sans-serif'; ctx.textAlign='center';
+  ctx.fillText(c.up, w*0.06, h*0.5);
+  const vowels=['a','e','i','o','u'], rowH=h/5;
+  vowels.forEach((v,i)=>{ const y=rowH*(i+0.5);
+    ctx.fillStyle='#2b2350'; ctx.font='900 '+Math.round(rowH*0.46)+'px "Comic Sans MS","Chalkboard SE",sans-serif'; ctx.textAlign='center';
+    ctx.fillText(v, w*0.16, y);
+    ctx.fillStyle='#bbb6d2'; ctx.fillText('→', w*0.235, y);
+    ctx.strokeStyle='#dbe3fb'; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(w*0.31, y+rowH*0.30); ctx.lineTo(w*0.96, y+rowH*0.30); ctx.stroke();
+  });
+  ctx.restore();
+}
+/* animated stroke-order demo */
+function strokeSVG(variant){
+  const S=STROKES[current]; if(!S) return ''; const c=CONS[current].color;
+  let p='<svg class="strokeSVG" viewBox="'+S.vb+'">';
+  S[variant].forEach(st=> p+='<path d="'+st.d+'" stroke="#d9deef" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
+  S[variant].forEach(st=> p+='<path class="ink" d="'+st.d+'" stroke="'+c+'" stroke-width="9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
+  S[variant].forEach((st,i)=> p+='<circle cx="'+st.n[0]+'" cy="'+st.n[1]+'" r="11" fill="'+c+'"/><text x="'+st.n[0]+'" y="'+(st.n[1]+5)+'" text-anchor="middle" font-size="15" font-weight="900" fill="#fff">'+(i+1)+'</text>');
+  return p+'</svg>';
+}
+let tracePlaying=false;
+async function playTrace(){
+  if(tracePlaying) return; tracePlaying=true;
+  const inks=[...document.querySelectorAll('#strokeDemo .ink')];
+  inks.forEach(p=>{ const L=p.getTotalLength(); p.style.transition='none'; p.style.strokeDasharray=L; p.style.strokeDashoffset=L; });
+  void document.getElementById('strokeDemo').offsetWidth;
+  for(const p of inks){
+    const L=p.getTotalLength(), dur=Math.max(450, Math.round(L*4));
+    p.style.transition='stroke-dashoffset '+dur+'ms linear'; p.style.strokeDashoffset=0;
+    await wait(dur+200);
+  }
+  tracePlaying=false;
+}
 function makePad(cv, guideFn, ratio){
   const ctx=cv.getContext('2d'); let drawing=false, strokes=[], cur=null, t0=0;
   function redraw(){ const w=cv.clientWidth,h=cv.clientHeight; ctx.clearRect(0,0,w,h); if(guideFn) guideFn(ctx,w,h); }
@@ -307,10 +355,8 @@ function selectCons(c){
   // 1. name/sound
   document.getElementById('bigletter').textContent=data.up+' '+data.low;
   document.getElementById('bigletter').style.background=data.color;
-  // 2. connections
-  document.getElementById('connections').innerHTML = data.con.map(o=>
-    '<div class="word" onclick="sayCon(\''+c+'\',\''+o.v+'\')"><span class="emoji">'+o.e+'</span>'+
-    '<span class="label">'+o.v+' → '+syllableHTML(o,data.color)+'</span><span class="hint">toca para oír 🔊</span></div>').join('');
+  // 2. stroke demo
+  document.getElementById('strokeDemo').innerHTML = '<div class="strokewrap">'+strokeSVG('upper')+strokeSVG('lower')+'</div>';
   // 3. sentences
   document.getElementById('sentences').innerHTML = data.sents.map((s,i)=>
     '<li onclick="saySent(\''+c+'\','+i+')">'+hl(s,data.color)+' <span class="hint">🔊</span></li>').join('');
@@ -408,7 +454,7 @@ function updateDScore(){ const s=document.getElementById('dscore'); if(s) s.inne
 /* ============ Init ============ */
 initNetToggle(); updateVoiceUI();
 pads.trace=makePad(document.getElementById('tcanvas'), traceGuide, 0.34);
-pads.con  =makePad(document.getElementById('concanvas'), lineGuide, 0.30);
+pads.con  =makePad(document.getElementById('concanvas'), conexGuide, 0.80);
 pads.copy =makePad(document.getElementById('copycanvas'), lineGuide, 0.40);
 pads.free =makePad(document.getElementById('freecanvas'), lineGuide, 0.46);
 pads.dict =makePad(document.getElementById('dictcanvas'), lineGuide, 0.30);
