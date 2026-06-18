@@ -55,10 +55,10 @@
   .word .label{font-size:clamp(20px,3.2vw,26px); font-weight:900; margin-top:6px;}
   .word .hint{font-size:12px; opacity:.5; font-weight:bold;}
 
-  ol.sentences{font-size:clamp(19px,3.2vw,26px); font-weight:bold; line-height:1.7; padding-left:1.4em;}
-  ol.sentences li{cursor:pointer; margin:4px 0; border-radius:10px; padding:2px 6px;}
-  ol.sentences li:active{background:#f4f0ff;}
-  ol.sentences .hint{font-size:14px; opacity:.5;}
+  .sentblock{margin:0 0 18px;}
+  .sent{font-size:clamp(19px,3.2vw,26px); font-weight:bold; cursor:pointer; border-radius:12px; padding:6px 8px;}
+  .sent:active{background:#f4f0ff;}
+  .sent .hint{font-size:15px; opacity:.5;}
 
   .padbox{position:relative; width:100%; border-radius:22px; overflow:hidden; border:5px dashed #e1d9f4; background:#fbfaff; margin:10px auto 0;}
   .padbox canvas{display:block; width:100%; touch-action:none;}
@@ -133,10 +133,8 @@
   <!-- 3. Lluvia de Palabras -->
   <section class="card">
     <h2>3️⃣ Lluvia de Palabras</h2>
-    <p class="lead">Escucha y copia las oraciones:</p>
-    <ol class="sentences" id="sentences"></ol>
-    <div class="padbox"><canvas id="copycanvas"></canvas></div>
-    <div class="padtools"><button class="speak sm" onclick="pads.copy.clear()"><span class="ic">🧽</span> Borrar</button></div>
+    <p class="lead">Escucha y copia cada oración debajo:</p>
+    <div id="lluvia"></div>
   </section>
 
   <!-- 4. Escritura Independiente -->
@@ -310,7 +308,7 @@ function makePad(cv, guideFn, ratio){
   const ctx=cv.getContext('2d'); let drawing=false, strokes=[], cur=null, t0=0;
   function redraw(){ const w=cv.clientWidth,h=cv.clientHeight; ctx.clearRect(0,0,w,h); if(guideFn) guideFn(ctx,w,h); }
   function size(){ const box=cv.parentElement; const w=box.clientWidth; if(!w) return;
-    const h=Math.max(150,Math.min(Math.round(w*(ratio||0.30)),300)); const dpr=window.devicePixelRatio||1;
+    const h=Math.max(140,Math.min(Math.round(w*(ratio||0.30)),480)); const dpr=window.devicePixelRatio||1;
     cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); redraw(); }
   function clear(){ strokes=[]; cur=null; redraw(); }
   function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
@@ -357,13 +355,24 @@ function selectCons(c){
   document.getElementById('bigletter').style.background=data.color;
   // 2. stroke demo
   document.getElementById('strokeDemo').innerHTML = '<div class="strokewrap">'+strokeSVG('upper')+strokeSVG('lower')+'</div>';
-  // 3. sentences
-  document.getElementById('sentences').innerHTML = data.sents.map((s,i)=>
-    '<li onclick="saySent(\''+c+'\','+i+')">'+hl(s,data.color)+' <span class="hint">🔊</span></li>').join('');
+  // 3. lluvia de palabras — a writing pad under each sentence
+  const ll=document.getElementById('lluvia'); ll.innerHTML=''; pads.copies=[];
+  data.sents.forEach((s,i)=>{
+    const block=document.createElement('div'); block.className='sentblock';
+    block.innerHTML='<div class="sent" data-i="'+i+'">'+(i+1)+'. '+hl(s,data.color)+' <span class="hint">🔊</span></div>'+
+      '<div class="padbox"><canvas></canvas></div>'+
+      '<div class="padtools"><button class="speak sm"><span class="ic">🧽</span> Borrar</button></div>';
+    ll.appendChild(block);
+    block.querySelector('.sent').onclick=()=>saySent(c,i);
+    const pad=makePad(block.querySelector('canvas'), lineGuide, 0.20);
+    pads.copies.push(pad);
+    block.querySelector('button').onclick=()=>pad.clear();
+  });
   // 4. free prompt
-  document.getElementById('freeprompt').textContent='Escribe tus propias oraciones con la letra '+data.up+' ✍️';
+  document.getElementById('freeprompt').textContent='Escribe 5 oraciones o palabras con la letra '+data.up+' ✍️';
   // reset pads
-  ['trace','con','copy','free'].forEach(k=>pads[k]&&pads[k].clear());
+  ['trace','con','free'].forEach(k=>pads[k]&&pads[k].clear());
+  setTimeout(sizeAllPads,0);
   resetDictado();
 }
 
@@ -453,14 +462,17 @@ function updateDScore(){ const s=document.getElementById('dscore'); if(s) s.inne
 
 /* ============ Init ============ */
 initNetToggle(); updateVoiceUI();
+function nLinesGuide(n){ return (ctx,w,h)=>{ ctx.save(); ctx.strokeStyle='#dbe3fb'; ctx.lineWidth=2; const gap=h/(n+1);
+  for(let i=1;i<=n;i++){ const y=Math.round(gap*i); ctx.beginPath(); ctx.moveTo(w*0.03,y); ctx.lineTo(w*0.97,y); ctx.stroke(); } ctx.restore(); }; }
+function sizeAllPads(){ ['trace','con','free','dict'].forEach(k=>pads[k]&&pads[k].size()); (pads.copies||[]).forEach(p=>p&&p.size()); }
 pads.trace=makePad(document.getElementById('tcanvas'), traceGuide, 0.34);
 pads.con  =makePad(document.getElementById('concanvas'), conexGuide, 0.80);
-pads.copy =makePad(document.getElementById('copycanvas'), lineGuide, 0.40);
-pads.free =makePad(document.getElementById('freecanvas'), lineGuide, 0.46);
+pads.free =makePad(document.getElementById('freecanvas'), nLinesGuide(5), 0.85);
 pads.dict =makePad(document.getElementById('dictcanvas'), lineGuide, 0.30);
+pads.copies=[];
 selectCons('F');
-['trace','con','copy','free'].forEach(k=>pads[k].size());
-window.addEventListener('resize',()=>{ Object.values(pads).forEach(p=>p.size()); });
+sizeAllPads();
+window.addEventListener('resize', sizeAllPads);
 document.body.addEventListener('touchstart',function prime(){
   if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }
   document.body.removeEventListener('touchstart',prime);
